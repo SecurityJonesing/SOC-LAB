@@ -142,64 +142,19 @@ show interfaces status
 
 ### Outcome
 Model: WS-C2960X-48FPS-L  IOS: 15.2(7)E9
-Interface naming: GigabitEthernet1/0/1 through 1/0/52 (shorthand Gi1/0/1), plus a separate Fa0 management por
+Interface naming: GigabitEthernet1/0/1 through 1/0/52 (shorthand Gi1/0/1), plus a separate Fa0 management port
 `switchport trunk encapsulation dot1q` supported? _______________
-```
-Port      Name               Status       Vlan       Duplex  Speed Type
-Gi1/0/1                      notconnect   1            auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/2                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/3                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/4                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/5                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/6                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/7                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/8                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/9                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/10                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/11                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/12                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/13                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/14                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/15                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/16                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/17                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/18                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/19                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/20                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/21                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/22                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/23                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/24                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/25                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/26                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/27                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/28                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/29                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/30                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/31                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/32                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/33                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/34                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/35                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/36                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/37                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/38                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/39                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/40                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/41                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/42                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/43                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/44                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/45                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/46                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/47                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/48                     notconnect   1            auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/49                     err-disabled 1            auto   auto unknown
-Gi1/0/50                     err-disabled 1            auto   auto unknown
-Gi1/0/51                     notconnect   1            auto   auto Not Present
-Gi1/0/52                     notconnect   1            auto   auto Not Present
-Fa0                          notconnect   routed       auto   auto 10/100BaseTX
-```
+
+| Port | Status | VLAN | Duplex | Speed | Type |
+|---|---|---|---|---|---|
+| Gi1/0/1 | notconnect | 1 | auto | auto | 10/100/1000BaseTX |
+| Gi1/0/2 – Gi1/0/47 | notconnect | 10 | auto | auto | 10/100/1000BaseTX |
+| Gi1/0/48 | notconnect | 1 | auto | auto | 10/100/1000BaseTX |
+| Gi1/0/49 | **err-disabled** | 1 | auto | auto | unknown |
+| Gi1/0/50 | **err-disabled** | 1 | auto | auto | unknown |
+| Gi1/0/51 | notconnect | 1 | auto | auto | Not Present |
+| Gi1/0/52 | notconnect | 1 | auto | auto | Not Present |
+| Fa0 | notconnect | routed | auto | auto | 10/100BaseTX |
 
 ### Lessons
 *(none — this was a read-only identification step; see factory-reset entry below for the actual config change)*
@@ -387,3 +342,57 @@ next step.
 4. Before any host-level `apt upgrade` involving a kernel: confirm all VMs' running
    state first — a reboot's impact scope depends entirely on what's actually
    running at the time, not on what's configured to autostart.
+
+---
+
+## 2026-07-21 — GitHub repo created, initial push
+
+**Phase:** B (pulled forward — Git setup normally starts in Phase B, done early since it was a natural stopping point)
+**Goal:** Get the SOC lab docs under version control and pushed to GitHub as the portfolio repo.
+**Rollback:** None needed — local `git init` is non-destructive; nothing existed on GitHub before this to lose.
+**Transcript:** PowerShell 7, `C:\Users\micha\SOC-Lab\Updated 7-16-2026`
+
+### What happened
+- Confirmed repo root: `C:\Users\micha\SOC-Lab\Updated 7-16-2026` (not the originally-planned
+  `C:\Users\micha\lab\soc-lab\` path — docs updated to match actual location).
+- Found Git installed per-user (`C:\Users\micha\AppData\Local\Programs\Git\cmd`), not per-machine.
+  `git` command failed in a stale PowerShell window and in an elevated (admin) PowerShell —
+  root cause: per-user installs only add to the user PATH, which an admin session doesn't
+  always load the same way. Fix: use a normal, non-elevated PowerShell window.
+- Created GitHub account (`SecurityJonesing`) and empty repo `SOC-LAB`
+  (`https://github.com/SecurityJonesing/SOC-LAB.git`), no README initialized.
+- Reorganized the local folder before first commit:
+  - Moved `logs/` out of the repo root to `C:\Users\micha\SOC-Lab\Logs\` (sibling folder,
+    matching the Cheatsheet's original intended structure) — keeps raw PuTTY/session
+    transcripts out of the public repo.
+  - Deleted a stray `files.zip` and a duplicate `SOC-Lab-Lesson-Plans.docx` that had ended up
+    inside `Diagrams/`.
+- Pre-push security review: scanned all tracked files (`build_log.md`, `LAB-BLUEPRINT.md`,
+  `agent-registry.md`, `PROJECT-INSTRUCTIONS.md`, and all `.docx` files converted via `pandoc`)
+  for real credentials, non-private IPs, MAC addresses, and serial numbers. None found —
+  all credentials in these files are placeholders, all IPs are private range or `8.8.8.8`.
+  Confirmed clean to publish.
+- `git init` → default branch created as `master` (not `main`).
+- `git add .`, `git commit -m "initial commit: SOC lab docs and build log"` —
+  15 files, 790 insertions.
+- `git remote add origin https://github.com/SecurityJonesing/SOC-LAB.git`
+- `git push -u origin master` — first attempt failed authentication (wrong GitHub username
+  entered in the browser sign-in prompt); corrected credential in Keeper vault, re-authenticated
+  as `SecurityJonesing`, push completed successfully: 18 objects, 1.72 MiB, new branch
+  `master` created on remote, local branch now tracks `origin/master`.
+
+### Outcome
+Repo live and public at `https://github.com/SecurityJonesing/SOC-LAB`. All 15 tracked files
+(docs, `build_log.md`, `Diagrams/`) confirmed pushed. `logs/` correctly excluded by living
+outside the repo folder rather than via `.gitignore`. Standard going-forward loop established:
+`git status` → `git add .` → `git commit -m "..."` → `git push` after every session.
+
+### Lessons
+1. **Per-user Git installs need a normal (non-admin) PowerShell window** — an elevated session
+   may not load the user PATH where `git.exe` actually lives, producing a "term not recognized"
+   error that looks like Git isn't installed at all when it actually is.
+2. **Do the "anything secret in here?" check before `git add .`, not after `git push`.**
+   Once pushed, it's permanent history even if deleted in a later commit.
+3. **Keep raw session logs physically outside the Git repo folder** (sibling directory) rather
+   than relying on `.gitignore` — simpler, and removes any chance of an accidental `git add -f`
+   or misconfigured ignore rule exposing them later.
