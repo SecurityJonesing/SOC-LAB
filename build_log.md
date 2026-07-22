@@ -1,0 +1,389 @@
+# build_log.md
+### Home SOC Lab — running record
+
+Every change, its **actual** output, the decision behind it, and every rollback point. Appended as it happens — never reconstructed afterward.
+
+**Why this file exists:** a previous attempt at Cisco + pfSense configuration (via a different AI tool) caused a lockout. There was no record of what had been changed, so there was no way to reverse it — which is what forced a full Proxmox reinstall. This file is the answer to "what exactly did we change?" before you need to ask it.
+
+**What goes where:**
+- **Raw terminal output** → session transcripts in `C:\Users\micha\SOC-Lab\Updated 7-16-2026\logs` (PuTTY logging, `Start-Transcript`, `script`). Everything, including typos and dead ends.
+- **This file** → the narrative. What you tried, what actually happened, what you decided, and how to undo it. Readable six months from now.
+
+**Rules:**
+- Record **actual** output, not what you expected. "It worked" is not an entry.
+- Log dead ends too. The thing that *didn't* work is often the most useful line in the file.
+- Every rollback point gets recorded when it's created, not when you need it.
+- Append as you go. If you're writing it up at the end of the session, it's already too late to be accurate.
+
+**Entry format:**
+
+```
+## YYYY-MM-DD — <what changed>
+**Phase:**       <A / A.5 / B / ... / pre-A>
+**Goal:**        <one line>
+**Rollback:**    <snapshot name, config export, or "none — read-only">
+**Transcript:**  <log filename>
+
+### What happened
+<commands, actual output, decisions>
+
+### Outcome
+<current state after this change>
+
+### Lessons
+<anything that should go in Project instructions as a gotcha>
+```
+
+---
+
+## 2026-07-16 — iDRAC recovery
+
+**Phase:** pre-A (Phase A gate: console access must be confirmed)
+**Goal:** Regain iDRAC access on `pve01`. Password unknown; no recovery path documented.
+**Rollback:** None needed — iDRAC config reset doesn't touch Proxmox or VMs.
+**Transcript:** *(not captured — this predates the session-recording rule)*
+
+### What happened
+
+**Attempt 1 — `racadm` from the Proxmox shell.** Considered resetting the iDRAC password from inside the running OS without a reboot. Abandoned: local RACADM needs Dell's OMSA / iDRAC Service Module, which isn't reliably available on Proxmox (Debian isn't a Dell-supported OS). Not worth the rabbit hole for a password reset.
+
+**Attempt 2 — iDRAC web virtual console.** Downloading the console produced a `viewer.jnlp` file. Windows had no handler for it. Root cause: iDRAC6 uses Java Web Start, which Oracle removed from the JRE at Java 11. Would have required installing legacy Java 8 or IcedTea-Web. Abandoned as not worth it.
+
+**Attempt 3 — BIOS (F2) → iDRAC Settings.** No iDRAC option present in System Setup. Root cause: on the R710, iDRAC6 is **not** inside the F2 menu — it has its own entry point.
+
+**What actually worked — `Ctrl+E` during POST.** The R710 shows a five-second window at POST offering "Remote Access Setup". That opens the iDRAC6 Configuration Utility, which is separate from F2's System Setup. Reset iDRAC configuration to defaults from there.
+
+**After the reset:**
+- Set iDRAC to DHCP; created a DHCP reservation on the home router → `192.168.0.100`
+- Logged in with factory defaults (`root` / `calvin`)
+- **Changed the password immediately** — a freshly-reset iDRAC on factory credentials is an open door on the network
+- Recorded IP + username + password together in one place
+
+### Outcome
+iDRAC confirmed reachable and working at **`192.168.0.100`**. Console access to `pve01` now exists independently of the network config — which is the prerequisite for touching anything network-related.
+
+### Lessons
+1. **iDRAC6 config is `Ctrl+E` during POST, NOT F2.** Five-second window, easy to miss. Separate menu from System Setup.
+2. **The R710 is legacy BIOS only** — predates UEFI on PowerEdge. Don't look for UEFI options.
+3. **iDRAC6's virtual console needs legacy Java Web Start** and modern Windows can't run it. **Monitor + keyboard plugged directly into the server is faster and always works** — prefer it over fighting Java.
+4. Resetting iDRAC also clears its network config, not just the password.
+
+---
+
+## 2026-07-16 — Management NIC move: NIC2 → NIC1
+
+**Phase:** pre-A (frees NIC2 to become pfSense's WAN in Phase A)
+**Goal:** Move Proxmox host management from NIC2 to NIC1, so NIC2 is available for pfSense WAN.
+**Rollback:** iDRAC (`192.168.0.100`) confirmed working first; monitor + keyboard on the server as backup. Both tested before starting.
+**Transcript:** *(not captured — predates the session-recording rule)*
+
+### What happened
+
+**Created `vmbr1` on NIC1 (`eno1`) via the Proxmox GUI.** First attempt failed: Proxmox rejected the Create with *"default gateway already exists on interface vmbr0"*. Proxmox allows only one default gateway per host. Left the Gateway field blank — and the IP field blank too, deliberately, to avoid a duplicate-IP conflict before the cable had moved.
+
+**Moved the physical cable from NIC2's port to NIC1's port.**
+
+**`vmbr1` initially showed state DOWN.** Checked `ip link show` — `eno1` itself came up, and `vmbr1` followed once its member interface had carrier. Confirmed `eno1` was genuinely NIC1 rather than assuming the chassis label matched the Linux name.
+
+**Assigned the IP via the local console** (monitor + keyboard, since neither bridge was reachable at that moment — `vmbr0` had the IP but no cable, `vmbr1` had the cable but no IP):
+```
+nano /etc/network/interfaces     # added address 192.168.0.201/24 + gateway to vmbr1
+ifreload -a
+ip addr show vmbr1               # confirmed 192.168.0.201/24 present
+ip link show vmbr1               # confirmed UP
+```
+
+**Then: ping to 192.168.0.201 timed out anyway.** Everything looked correct — bridge UP, IP assigned, same subnet as the PC, cable in the same dumb switch.
+
+**Root cause: `vmbr0` still held `192.168.0.201` as well.** The earlier edit to comment out its address hadn't taken. Two bridges on the same host claiming the same static IP creates ARP ambiguity — the kernel doesn't know which interface should answer, so replies get dropped or sent from the disconnected bridge. **Silent failure, no error message anywhere.**
+
+**Fix:**
+```
+nano /etc/network/interfaces     # commented out vmbr0's address line
+ip addr flush dev vmbr0          # cleared it at the kernel level immediately
+ifreload -a
+```
+Ping replied. Proxmox web UI loaded at `192.168.0.201:8006`.
+
+**Second problem, immediately after: Kali and Win11-LTSC-victim both reported "network unreachable."** Root cause: both VMs' network devices were still attached to `vmbr0` — which now had no IP *and* no cable. Moving the physical cable did not move the VMs.
+
+**Fix:** shut down each VM → Hardware tab → Network Device → changed Bridge from `vmbr0` to `vmbr1` → booted. Both reached the internet again.
+
+### Outcome
+- **NIC1 / `vmbr1`** = Proxmox management, `192.168.0.201`. Confirmed working.
+- **NIC2 / `vmbr0`** = no IP, no VMs attached. **Free — becomes pfSense WAN in Phase A.**
+- Kali + Win11-LTSC-victim both on `vmbr1`, internet-reachable, **not yet isolated**.
+- NIC3 (pfSense LAN trunk) and NIC4 (spare / SPAN fallback) unconfigured.
+
+### Lessons
+1. **Duplicate IP across bridges = silent ARP failure.** Proxmox permits two bridges to hold the same static IP even with one physically disconnected. No error, no warning, pings just vanish. **Always check `ip addr show` on BOTH bridges after any reassignment.** → now Project-instructions gotcha #1.
+2. **Moving a cable or bridge orphans every VM still pointed at the old one.** The VM reports "network unreachable" with no obvious cause, because nothing about the VM changed. **Check every VM's Hardware tab after any bridge change.** → now Project-instructions gotcha #2.
+3. Proxmox allows exactly one default gateway per host — a second bridge on the same subnet doesn't need its own.
+4. Create the bridge with **no IP**, move the cable, *then* assign the IP. Ordering avoids the duplicate-IP window entirely.
+5. Don't assume the chassis port label matches the Linux interface name. Confirm with `ip link show` / `ethtool <iface>` and watch which one loses carrier when you unplug it.
+6. **Both of these were found by console access, not by SSH** — which is exactly the situation the Recovery Ladder exists for. The iDRAC recovery the day before is what made this change safe to attempt.
+
+---
+
+## 2026-07-17 — Identifying the Cisco switch
+
+**Phase:** A
+**Goal:** Identify the Cisco switch before writing any command for it — model, IOS version, real interface names.
+**Rollback:** None needed — `show` commands are read-only.
+**Transcript:** `C:\Users\micha\SOC-Lab\Updated 7-16-2026\logs` (PuTTY → Session → Logging → All session output, set BEFORE connecting)
+
+### What happened
+```
+enable 
+show version 
+show interfaces status
+```
+
+
+### Outcome
+Model: WS-C2960X-48FPS-L  IOS: 15.2(7)E9
+Interface naming: GigabitEthernet1/0/1 through 1/0/52 (shorthand Gi1/0/1), plus a separate Fa0 management por
+`switchport trunk encapsulation dot1q` supported? _______________
+```
+Port      Name               Status       Vlan       Duplex  Speed Type
+Gi1/0/1                      notconnect   1            auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/2                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/3                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/4                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/5                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/6                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/7                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/8                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/9                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/10                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/11                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/12                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/13                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/14                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/15                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/16                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/17                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/18                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/19                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/20                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/21                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/22                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/23                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/24                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/25                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/26                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/27                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/28                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/29                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/30                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/31                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/32                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/33                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/34                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/35                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/36                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/37                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/38                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/39                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/40                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/41                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/42                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/43                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/44                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/45                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/46                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/47                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/48                     notconnect   1            auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/49                     err-disabled 1            auto   auto unknown
+Gi1/0/50                     err-disabled 1            auto   auto unknown
+Gi1/0/51                     notconnect   1            auto   auto Not Present
+Gi1/0/52                     notconnect   1            auto   auto Not Present
+Fa0                          notconnect   routed       auto   auto 10/100BaseTX
+```
+
+### Lessons
+*(none — this was a read-only identification step; see factory-reset entry below for the actual config change)*
+
+---
+
+## 2026-07-17 — Cisco switch factory reset
+
+**Phase:** A
+**Goal:** Wipe switch to factory defaults, confirm clean console access, before any VLAN/trunk config.
+**Rollback:** None needed — this was an intentional, planned reset.
+**Transcript:** switch-2026-07-17-*.log (PuTTY, COM14)
+
+### What happened
+- Identified switch first: WS-C2960X-48FPS-L, IOS 15.2(7)E9. Real interface
+  naming confirmed: GigabitEthernet1/0/1–1/0/52, plus Fa0 (mgmt-only).
+- Pre-reset `show interfaces status` showed prior config: hostname
+  Lab-Switch, most ports in VLAN 10, ports Gi1/0/49-50 err-disabled.
+- `write erase` completed cleanly.
+- First `reload` attempt: answered [confirm] with "n" instead of Enter,
+  which CANCELED the reload — NVRAM was erased but switch kept running
+  old config in RAM. Caught this before assuming reload had happened.
+- Re-ran `reload`, pressed Enter at [confirm] this time. Reboot completed.
+  Declined initial config dialog (no).
+- Session log has garbage lines from accidental clipboard paste (right-click
+  in PuTTY pastes clipboard directly; a chat response was on the clipboard
+  at the time) — switch correctly rejected all of it as invalid input, no
+  actual config impact. Confirmed via `show run` below.
+- Verified clean state: `enable` required no password, `show run` shows
+  hostname "Switch" (default), no VLAN assignments, no err-disabled state,
+  all 52 Gi ports at default, no aaa/line passwords configured.
+-Ran `write memory` to save the clean state to NVRAM. Confirmed via
+  `show config` — saved config matches the verified clean running-config
+  exactly (hostname Switch, no VLANs, no passwords, all ports default).
+- Powered off switch normally (no graceful-shutdown command exists on IOS;
+  physical power-off at an idle prompt is safe).    
+### Outcome
+Switch factory reset confirmed clean, saved to NVRAM, and powered down
+safely. Console access (PuTTY, COM14, 9600 8N1) confirmed working
+post-reset. Ready for Phase A step 3 (pfSense VM build) and step 4 (VLAN
+creation on switch) next session.
+
+### Lessons
+1. On Cisco, `[confirm]` prompts want Enter — any other keystroke (including
+   "n") CANCELS the action rather than confirming "no". Different from a
+   [yes/no] prompt, which does take a typed answer.
+2. Right-click in PuTTY pastes the OS clipboard directly as keystrokes with
+   no preview. Check clipboard contents before right-clicking, or use
+   left-click-drag to select+copy just the intended text.
+
+---
+
+## 2026-07-21 — NIC troubleshooting + vmbr3 creation (Phase A step 3)
+
+**Phase:** A
+**Goal:** Identify NIC3 physically, create trunk-capable bridge for pfSense LAN.
+**Rollback:** None needed — no destructive changes; only bridge creation (additive) and interface up/down toggles.
+**Transcript:** session logs from today, pve01 console + SSH
+
+### What happened
+- Chassis port labels (`Gb1`-`Gb4`) confirmed NOT self-evident from `ip link show` alone —
+  had to physically trace cables to labels. `Gb1` = `eno1`, confirmed via physical
+  inspection AND behaviorally (unplugging it dropped the SSH/management session).
+- `eno2`, `eno3`, `eno4` all showed `state DOWN` / `Link detected: no` across multiple
+  cables, multiple switch ports, and even a direct PC-to-server connection — appeared
+  to rule out cabling entirely.
+- Extensive troubleshooting followed: `lspci`/`dmesg` (confirmed all 4 NICs detected
+  cleanly by kernel, no driver errors), BIOS Integrated Devices check (all 4 ports
+  shown Enabled), iDRAC Lifecycle Log/SEL review (no explicit NIC fault logged, though
+  real historical CPU/memory/IO fault entries exist from Feb-Mar 2026 — unrelated to
+  this issue as it turned out).
+- **Root cause, finally found:** `eno2`/`eno3`/`eno4` were simply never administratively
+  brought up (`ip link show` showed no `UP` flag, only `eno1` had it via vmbr1
+  membership). Physical hardware was never at fault. Fix:
+  ```
+  ip link set eno2 up
+  ip link set eno3 up
+  ip link set eno4 up
+  ```
+  All three immediately showed `LOWER_UP` and clean `1000Mb/s Full duplex` link once
+  brought up.
+- Created `vmbr3` via Proxmox GUI (System > Network > Create > Linux Bridge):
+  bridge-port `eno3`, no IP, VLAN-aware enabled (`bridge-vids 2-4094`). Applied via
+  GUI "Apply Configuration" — took effect live, no reboot needed. Confirmed written
+  to `/etc/network/interfaces` (persistent, not just runtime state).
+- Naming: chose `vmbr3` (matching `eno3`/NIC3) instead of the "next sequential"
+  `vmbr2`, as a deliberate one-off exception to keep NIC-to-bridge naming legible,
+  despite `vmbr0`(NIC2)/`vmbr1`(NIC1) already being a mismatched, unfixable-without-risk
+  precedent from earlier setup.
+
+### Outcome
+All 4 physical NICs confirmed healthy: `eno1` (Gb1, management, vmbr1),
+`eno2` (Gb2, confirmed working, unused), `eno3` (Gb3, now `vmbr3`, pfSense LAN
+trunk target), `eno4` (Gb4, confirmed working, spare/SPAN fallback per plan).
+`vmbr3` created, VLAN-aware, ready for pfSense VM's LAN interface (net1) in the
+next step.
+
+### Lessons
+1. **Check administrative interface state (`ip link set <iface> up`) BEFORE any
+   hardware-level troubleshooting** (cabling, BIOS, iDRAC logs). A `DOWN` interface
+   with no `UP` flag will show `Link detected: no` in `ethtool` even with perfectly
+   healthy hardware and a good cable — this looks identical to a real hardware fault
+   and cost significant time to diagnose here. This is now the FIRST thing to check
+   on any "port shows no link" problem going forward.
+2. Chassis port labels are not reliable without physical confirmation — verify by
+   unplug/replug + `ip link show`, not by reading a photo or assuming left-to-right
+   ordering matches `eno` numbering.
+3. `vmbr` bridge names don't have to match NIC numbers, and neither convention is
+   objectively correct — but once `vmbr0`/`vmbr1` exist with one convention, consider
+   deciding on a naming scheme deliberately rather than defaulting to "next sequential
+   number" without thinking about it.
+
+---
+
+## 2026-07-21 — vmbr0→vmbr2 swap, missing gateway fix, package upgrade + reboot
+
+**Phase:** A
+**Goal:** Rename NIC2's bridge to match NIC-number convention (vmbr0→vmbr2); discovered and fixed a missing default gateway in the process; upgraded and rebooted pve01.
+**Rollback:** None needed — vmbr0 had no IP/no VMs attached (safe to delete); gateway addition tested live before persisting; package upgrade left prior kernels installed and selectable in GRUB as fallback.
+**Transcript:** session logs from today, pve01 console + SSH
+
+### What happened
+- Deleted `vmbr0` via Proxmox GUI (System > Network > Remove > Apply Configuration).
+  Confirmed removed both live (`ip addr show vmbr0` → "Device does not exist") and in
+  `/etc/network/interfaces` (no vmbr0 stanza).
+- Created `vmbr2` on `eno2` (System > Network > Create > Linux Bridge): no IP, VLAN-aware
+  left UNCHECKED (this is pfSense's planned WAN side, not a VLAN trunk — only vmbr3/NIC3
+  needs VLAN-aware). Confirmed UP, no IPv4, present in `/etc/network/interfaces`.
+- While troubleshooting `apt update` failures (all repos returning "Network is
+  unreachable"), found `ip route show` had no default route — only the local
+  `192.168.0.0/24` subnet route via vmbr1. `/etc/network/interfaces` confirmed no
+  `gateway` line existed anywhere, despite the 2026-07-16 log entry stating one was
+  added to vmbr1 at that time. Root cause of the discrepancy not determined — either
+  removed at some point after 07-16, or the original apply never fully completed.
+- Before editing vmbr1 (live management interface): confirmed iDRAC (192.168.0.100)
+  and monitor+keyboard fallback access, confirmed session recording on.
+- Fix: added `gateway 192.168.0.1` line under vmbr1's `iface` stanza in
+  `/etc/network/interfaces`, then `ifreload -a`. Verified live: `ip route show` showed
+  new default route; `ping 192.168.0.1` and `ping 8.8.8.8` both succeeded; SSH session
+  stayed connected throughout.
+- Ran `apt update` — succeeded once gateway was fixed (582 kB fetched, 72 packages
+  upgradable). Reviewed `apt list --upgradable` before proceeding: included 2 kernel
+  packages (proxmox-kernel-6.17, proxmox-kernel-7.0), pve-manager, qemu-server,
+  pve-firewall, pve-container, ZFS packages, and standard Debian libs — no unexpected
+  removals (Removing: 0).
+- Chose not to snapshot before upgrade (pve01 is the bare-metal host, not a VM —
+  `qm snapshot` doesn't apply to the host itself; confirmed prior kernels remain
+  selectable in GRUB as the actual fallback).
+- Ran `apt upgrade`, confirmed `Y` at the prompt. All 72 packages + 2 new kernel
+  packages installed cleanly, no errors, no interactive config-conflict prompts.
+  GRUB regenerated with 5 kernel entries available (7.0.14-5, 7.0.12-1, 6.17.13-18,
+  6.17.13-13, 6.17.2-1).
+- Confirmed both VMs (Kali, Win11-LTSC-Victim) were `stopped` before reboot — no
+  running VM sessions to interrupt.
+- Rebooted. Confirmed post-reboot: new kernel active (`7.0.14-5-pve`), vmbr1/192.168.0.201
+  up, default route persisted, ping to 8.8.8.8 succeeded — gateway fix and bridge changes
+  both survived reboot cleanly.
+
+### Outcome
+- NIC2 / `vmbr2` = no IP, no VMs, ready for pfSense WAN assignment.
+- NIC1 / `vmbr1` = management, `192.168.0.201/24`, now with a working default
+  gateway (`192.168.0.1`) — internet-reachable, confirmed persistent across reboot.
+- pve01 fully patched: kernel `7.0.14-5-pve` running, pve-manager 9.2.4, all other
+  packages current as of this date.
+- Both VMs (Kali, Win11-LTSC-Victim) remained `stopped` throughout — unaffected by
+  the reboot since neither was running beforehand.
+- Current bridge state: `vmbr1` (NIC1, management) · `vmbr2` (NIC2, pfSense WAN,
+  unconfigured) · `vmbr3` (NIC3, pfSense LAN trunk, VLAN-aware, unconfigured) ·
+  NIC4 unbridged (spare / SPAN fallback per plan).
+
+### Lessons
+1. **A "no default gateway" symptom can look identical to a DNS or firewall
+   problem** (`apt update` failing on every repo) — check `ip route show` for a
+   default route early when package manager connectivity fails entirely, not just
+   DNS resolution or specific host reachability.
+2. **A prior log entry stating a change was made is not the same as confirming
+   it's still true.** The 2026-07-16 entry documented adding a gateway to vmbr1,
+   but it was absent from the live config weeks later with no record of removal.
+   Verify current state against the live system before trusting a past log entry
+   as still-accurate, especially for anything network-related.
+3. Proxmox's `qm snapshot` only covers VMs, not the bare-metal host itself — there
+   is no built-in Proxmox mechanism to snapshot pve01's own OS/filesystem. The
+   actual fallback for a host-level package upgrade is confirming prior kernels
+   remain selectable in GRUB, plus the standard Recovery Ladder (iDRAC, console).
+4. Before any host-level `apt upgrade` involving a kernel: confirm all VMs' running
+   state first — a reboot's impact scope depends entirely on what's actually
+   running at the time, not on what's configured to autostart.
