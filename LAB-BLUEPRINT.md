@@ -14,23 +14,25 @@
 |---|---|---|
 | `pve01` | Dell PowerEdge R710, Xeon X5675, 64GB RAM, RAID 10, 4x physical NICs | Primary Proxmox host — victims, attacker, pfSense, Wazuh |
 | `pve-ai` | i9-10900KF, RTX 3070 | Local AI inference node |
-| Cisco Catalyst switch | — | Being wiped to factory defaults; will carry VLAN trunk + SPAN monitor port |
+| Cisco Catalyst switch | WS-C2960X-48FPS-L, IOS 15.2(7)E9 | Factory reset complete and confirmed clean; will carry VLAN trunk + SPAN monitor port |
 | 2x USB-to-Ethernet adapters | — | For SPAN destination (Suricata monitoring NIC) via USB passthrough. Chipset/throughput **must be verified** before Phase C.5 relies on them (see Phase C.5). NIC4 is the fallback if they prove unreliable. |
 | QNAP TS-869 Pro | — | **Excluded from this lab.** Existing home-file-share config left untouched. |
 
 ### `pve01` NIC allocation (confirmed working)
 | NIC | Linux interface | Bridge | Purpose | Status |
 |---|---|---|---|---|
-| NIC1 | `eno1` | `vmbr1` | Proxmox host management — `192.168.0.201/24` | ✅ Confirmed working |
-| NIC2 | (former mgmt NIC) | `vmbr0` (no IP) | pfSense WAN — plugs into home dumb switch | Free, ready to assign to pfSense VM |
-| NIC3 | — | — | pfSense LAN — 802.1Q trunk to Cisco switch, carries all lab VLANs | Not yet configured |
-| NIC4 | — | — | Spare — **fallback SPAN destination NIC** if USB adapters prove unreliable; otherwise backup/migration link | Unused |
+| NIC1 | `eno1` | `vmbr1` | Proxmox host management — `192.168.0.201/24`, gateway `192.168.0.1` confirmed | ✅ Confirmed working |
+| NIC2 | `eno2` | `vmbr2` (no IP) | pfSense WAN — plugs into home dumb switch | ✅ Bridge built 2026-07-21 (renamed from `vmbr0`); free, ready to assign to pfSense VM |
+| NIC3 | `eno3` | `vmbr3` (no IP, VLAN-aware) | pfSense LAN — 802.1Q trunk to Cisco switch, carries all lab VLANs | ✅ Bridge built 2026-07-21, VLAN-aware; not yet attached to a VM |
+| NIC4 | `eno4` | — | Spare — **fallback SPAN destination NIC** if USB adapters prove unreliable; otherwise backup/migration link | ✅ Confirmed link-up 2026-07-21; otherwise unused |
 
-**Current bridge state (confirmed working):** All existing VMs — **Kali** and **Win11-LTSC-victim** — are consolidated on `vmbr1` (NIC1) as the single live bridge, and both reach the internet. `vmbr0` (NIC2) has no IP and no VMs attached; it is reserved for pfSense WAN. This is the clean, verified starting point for Phase A.
+**Current bridge state (confirmed working):** All existing VMs — **Kali** and **Win11-LTSC-victim** — are consolidated on `vmbr1` (NIC1) as the single live bridge, and both reach the internet. `vmbr2` (NIC2, renamed from `vmbr0` on 2026-07-21) has no IP and no VMs attached; it is reserved for pfSense WAN. `vmbr3` (NIC3) is also built — VLAN-aware, no IP — ready for pfSense's LAN trunk once the pfSense VM exists. `pve01` itself is fully patched (kernel `7.0.14-5-pve` as of 2026-07-21); both VMs were stopped through that reboot and were unaffected. This is the clean, verified starting point for Phase A.
 
 **Known gotcha #1, already hit once:** Proxmox does not allow two bridges to claim the same static IP simultaneously, even if one has no physical link — causes ARP ambiguity and silent ping failures. Always confirm with `ip addr show <bridge>` on *both* bridges after any reassignment.
 
 **Known gotcha #2, already hit once:** Moving a physical cable or reassigning a bridge silently orphans any VM whose network device still points at the old bridge — the VM shows "network unreachable" with no obvious cause. When Phase A builds the VLAN-specific bridges, **each VM's network device must be deliberately re-pointed** to its correct VLAN bridge, not left on `vmbr1` by default. Check every VM's Hardware tab after any bridge change.
+
+**Known gotcha #3, already hit once:** A NIC showing no link and failing cable/BIOS/iDRAC-log checks may simply never have been brought administratively up (`ip link set <iface> up`) — not a hardware fault. Check admin state first on any future "no link" symptom. Related: a `build_log.md` entry stating a change was made (e.g. vmbr1's default gateway) is not proof it's still true weeks later — verify current state (`ip route show`, etc.) against the live system rather than trusting the log.
 
 ### Existing VMs on `pve01`
 - **Kali** — currently on `vmbr1`, internet-reachable. Becomes the attack box (runs Atomic Red Team simulations). Moves to Range VLAN in Phase B.
@@ -44,9 +46,9 @@
 - Not part of the attack range. Stays on the standard lab VLAN, untouched by isolation changes.
 
 ### Network — current state
-- Home router (192.168.0.1, assumed) does DHCP/routing for everything today — flat network, no segmentation
+- Home router (192.168.0.1) does DHCP/routing for everything today — flat network, no segmentation
 - No pfSense installed anywhere yet
-- Cisco switch physically unplugged, about to be factory-reset (`write erase` + `reload`), console access via USB-serial + PuTTY confirmed working
+- Cisco switch identified (WS-C2960X-48FPS-L, IOS 15.2(7)E9; interface naming `GigabitEthernet1/0/1`–`1/0/52` plus `Fa0` dedicated mgmt port), factory reset complete and confirmed clean (`show run`: hostname default, no VLANs, no passwords), console access via USB-serial + PuTTY confirmed working (COM14, 9600/8/1/None/None). Currently powered down. **Ready for Phase A step 4 (VLAN creation).**
 - iDRAC recovered and secured: `https://192.168.0.100`, DHCP reservation set on home router
 
 ---
@@ -98,13 +100,13 @@ Mgmt VLAN  Infra VLAN   Range VLAN     SPAN monitor port
 2. Create `build_log.md` in the repo root and begin logging immediately — every command, actual output, decision, and rollback point, updated as you go.
 3. Turn on session recording before touching anything: PuTTY logging for the switch, `Start-Transcript` in PowerShell, `script` on Linux hosts (see `CLAUDE.md` → Session recording). The prior lockout incident happened with no transcript; that gap is what made recovery impossible.
 
-1. Factory reset Cisco switch: `write erase`, `reload`
-2. Confirm console access to the clean switch
-3. Build pfSense VM on `pve01`:
-   - WAN interface → bridged to NIC2 (`vmbr0`)
-   - LAN interface → bridged to NIC3 (new bridge, trunk-capable)
+1. ✅ **Done (2026-07-17)** — Factory reset Cisco switch: `write erase`, `reload`
+2. ✅ **Done (2026-07-17)** — Confirm console access to the clean switch
+3. **Partially done (2026-07-21)** — Build pfSense VM on `pve01`:
+   - Bridges built: NIC2 → `vmbr2` (WAN side, no IP) ✅, NIC3 → `vmbr3` (LAN side, VLAN-aware, no IP) ✅
+   - pfSense VM itself: **not yet created** ← next after Step 4
    - Snapshot the VM immediately after initial pfSense setup completes, before any firewall rules are added
-4. Configure switch incrementally, one step at a time, testing after each:
+4. **← Next up.** Configure switch incrementally, one step at a time, testing after each:
    - Create the three VLANs (Management, Infra, Range)
    - Configure NIC3's switch port as an 802.1Q trunk carrying all three VLANs
    - Assign your PC's lab port to the Management VLAN (access port, untagged)
