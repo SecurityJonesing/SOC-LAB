@@ -22,11 +22,11 @@
 | NIC | Linux interface | Bridge | Purpose | Status |
 |---|---|---|---|---|
 | NIC1 | `eno1` | `vmbr1` | Proxmox host management — `192.168.0.201/24`, gateway `192.168.0.1` confirmed | ✅ Confirmed working |
-| NIC2 | `eno2` | `vmbr2` (no IP) | pfSense WAN — plugs into home dumb switch | ✅ Bridge built 2026-07-21 (renamed from `vmbr0`); free, ready to assign to pfSense VM |
-| NIC3 | `eno3` | `vmbr3` (no IP, VLAN-aware) | pfSense LAN — 802.1Q trunk to Cisco switch, carries all lab VLANs | ✅ Bridge built 2026-07-21, VLAN-aware; not yet attached to a VM |
+| NIC2 | `eno2` | `vmbr2` (no IP) | pfSense WAN — plugs into home dumb switch | ✅ Attached to pfSense VM (net0), DHCP lease `192.168.0.131/24` confirmed |
+| NIC3 | `eno3` | `vmbr3` (no IP, VLAN-aware) | pfSense LAN — 802.1Q trunk to Cisco switch, carries all lab VLANs | ✅ Attached to pfSense VM (net1), trunk live, VLAN interfaces not yet created (Step 5 next) |
 | NIC4 | `eno4` | — | Spare — **fallback SPAN destination NIC** if USB adapters prove unreliable; otherwise backup/migration link | ✅ Confirmed link-up 2026-07-21; otherwise unused |
 
-**Current bridge state (confirmed working):** All existing VMs — **Kali** and **Win11-LTSC-victim** — are consolidated on `vmbr1` (NIC1) as the single live bridge, and both reach the internet. `vmbr2` (NIC2, renamed from `vmbr0` on 2026-07-21) has no IP and no VMs attached; it is reserved for pfSense WAN. `vmbr3` (NIC3) is also built — VLAN-aware, no IP — ready for pfSense's LAN trunk once the pfSense VM exists. `pve01` itself is fully patched (kernel `7.0.14-5-pve` as of 2026-07-21); both VMs were stopped through that reboot and were unaffected. This is the clean, verified starting point for Phase A.
+**Current bridge state (confirmed working):** All existing VMs — **Kali** and **Win11-LTSC-victim** — are consolidated on `vmbr1` (NIC1) as the single live bridge, and both reach the internet. `vmbr2` (NIC2) carries pfSense's WAN NIC, live with a DHCP lease from the dumb switch. `vmbr3` (NIC3) carries pfSense's LAN trunk NIC — VLAN-aware, trunk confirmed passing VLANs 10/20/30, VLAN sub-interfaces not yet created inside pfSense. `pve01` itself is fully patched (kernel `7.0.14-5-pve` as of 2026-07-21).
 
 **Known gotcha #1, already hit once:** Proxmox does not allow two bridges to claim the same static IP simultaneously, even if one has no physical link — causes ARP ambiguity and silent ping failures. Always confirm with `ip addr show <bridge>` on *both* bridges after any reassignment.
 
@@ -47,7 +47,7 @@
 
 ### Network — current state
 - Home router (192.168.0.1) does DHCP/routing for everything today — flat network, no segmentation
-- No pfSense installed anywhere yet
+- pfSense CE 2.8.1 installed and running (VM 102), WAN and LAN attached to the correct bridges — VLAN interfaces inside pfSense not yet created (Step 5)
 - Cisco switch identified (WS-C2960X-48FPS-L, IOS 15.2(7)E9; interface naming `GigabitEthernet1/0/1`–`1/0/52` plus `Fa0` dedicated mgmt port), factory reset complete and confirmed clean (`show run`: hostname default, no VLANs, no passwords), console access via USB-serial + PuTTY confirmed working (COM14, 9600/8/1/None/None). Currently powered down. **Ready for Phase A step 4 (VLAN creation).**
 - iDRAC recovered and secured: `https://192.168.0.100`, DHCP reservation set on home router
 
@@ -102,15 +102,13 @@ Mgmt VLAN  Infra VLAN   Range VLAN     SPAN monitor port
 
 1. ✅ **Done (2026-07-17)** — Factory reset Cisco switch: `write erase`, `reload`
 2. ✅ **Done (2026-07-17)** — Confirm console access to the clean switch
-3. **Partially done (2026-07-21)** — Build pfSense VM on `pve01`:
-   - Bridges built: NIC2 → `vmbr2` (WAN side, no IP) ✅, NIC3 → `vmbr3` (LAN side, VLAN-aware, no IP) ✅
-   - pfSense VM itself: **not yet created** ← next after Step 4
-   - Snapshot the VM immediately after initial pfSense setup completes, before any firewall rules are added
-4. **← Next up.** Configure switch incrementally, one step at a time, testing after each:
-   - Create the three VLANs (Management, Infra, Range)
-   - Configure NIC3's switch port as an 802.1Q trunk carrying all three VLANs
-   - Assign your PC's lab port to the Management VLAN (access port, untagged)
-5. In pfSense, create matching VLAN interfaces on the LAN side, assign subnets to each
+3. ✅ **Done (2026-07-24)** — Build pfSense VM on `pve01`:
+   - Bridges: NIC2 → `vmbr2` (WAN side, no IP) ✅, NIC3 → `vmbr3` (LAN side, VLAN-aware, no IP) ✅
+   - VM 102 (`pfsense`) created, pfSense CE 2.8.1 installed, booted successfully. `net0`→`vmbr2` (WAN, DHCP, got `192.168.0.131/24` from the dumb switch), `net1`→`vmbr3` (LAN trunk, factory-default `192.168.1.1/24` pending replacement in Step 7).
+   - VM resources temporarily bumped to 3 cores/4GB RAM to push through a slow first boot — revisit and right-size after steady-state load is known.
+   - Snapshot the VM now that initial setup is complete, before any firewall rules are added
+4. ✅ **Done (2026-07-23)** — Configured switch: three VLANs created (Management, Infra, Range), NIC3's switch port (`Gi1/0/3`) as an 802.1Q trunk carrying all three VLANs, PC's management port (`Gi1/0/48`, via dedicated USB-Ethernet adapter link) assigned to the Management VLAN
+5. **← Next up.** In pfSense, create matching VLAN interfaces on the LAN side, assign subnets to each
 6. **Acceptance check:** your PC (on Management VLAN) can reach pfSense's web UI and `192.168.0.201` (Proxmox). Do not proceed to Phase B until this is confirmed.
 
 ### Phase A.5 — Isolation Rule

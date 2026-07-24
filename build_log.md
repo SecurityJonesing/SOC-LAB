@@ -142,19 +142,64 @@ show interfaces status
 
 ### Outcome
 Model: WS-C2960X-48FPS-L  IOS: 15.2(7)E9
-Interface naming: GigabitEthernet1/0/1 through 1/0/52 (shorthand Gi1/0/1), plus a separate Fa0 management port
+Interface naming: GigabitEthernet1/0/1 through 1/0/52 (shorthand Gi1/0/1), plus a separate Fa0 management por
 `switchport trunk encapsulation dot1q` supported? _______________
-
-| Port | Status | VLAN | Duplex | Speed | Type |
-|---|---|---|---|---|---|
-| Gi1/0/1 | notconnect | 1 | auto | auto | 10/100/1000BaseTX |
-| Gi1/0/2 – Gi1/0/47 | notconnect | 10 | auto | auto | 10/100/1000BaseTX |
-| Gi1/0/48 | notconnect | 1 | auto | auto | 10/100/1000BaseTX |
-| Gi1/0/49 | **err-disabled** | 1 | auto | auto | unknown |
-| Gi1/0/50 | **err-disabled** | 1 | auto | auto | unknown |
-| Gi1/0/51 | notconnect | 1 | auto | auto | Not Present |
-| Gi1/0/52 | notconnect | 1 | auto | auto | Not Present |
-| Fa0 | notconnect | routed | auto | auto | 10/100BaseTX |
+```
+Port      Name               Status       Vlan       Duplex  Speed Type
+Gi1/0/1                      notconnect   1            auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/2                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/3                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/4                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/5                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/6                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/7                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/8                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/9                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/10                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/11                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/12                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/13                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/14                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/15                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/16                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/17                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/18                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/19                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/20                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/21                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/22                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/23                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/24                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/25                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/26                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/27                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/28                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/29                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/30                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/31                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/32                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/33                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/34                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/35                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/36                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/37                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/38                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/39                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/40                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/41                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/42                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/43                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/44                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/45                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/46                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/47                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/48                     notconnect   1            auto   auto 10/100/1000Ba                                                                                                                               seTX
+Gi1/0/49                     err-disabled 1            auto   auto unknown
+Gi1/0/50                     err-disabled 1            auto   auto unknown
+Gi1/0/51                     notconnect   1            auto   auto Not Present
+Gi1/0/52                     notconnect   1            auto   auto Not Present
+Fa0                          notconnect   routed       auto   auto 10/100BaseTX
+```
 
 ### Lessons
 *(none — this was a read-only identification step; see factory-reset entry below for the actual config change)*
@@ -342,57 +387,113 @@ next step.
 4. Before any host-level `apt upgrade` involving a kernel: confirm all VMs' running
    state first — a reboot's impact scope depends entirely on what's actually
    running at the time, not on what's configured to autostart.
+---
+
+## 2026-07-23 — VLAN creation, trunk to pfSense, management access port (Phase A Steps 4-6)
+
+**Phase:** A
+**Goal:** Create the three VLANs, configure the trunk port to pfSense (NIC3/Gi1/0/3), and put the PC's management port into the Management VLAN.
+**Rollback:** None needed for VLAN creation (additive, no prior state to preserve). Config saved to NVRAM only after each step's output was confirmed correct.
+**Transcript:** session logs from today, PuTTY (switch, COM14)
+
+### What happened
+
+**Pre-check — `show run` reviewed before touching anything.** Confirmed switch still matched the clean, factory-reset baseline from 2026-07-17: hostname `Switch`, no VLANs beyond default `Vlan1`, no `aaa new-model`, no passwords on `con 0`/`vty` lines, all 52 `Gi1/0/1`-`1/0/52` ports present and unconfigured.
+
+**Step 4 — created VLANs 10 (MGMT), 20 (INFRA), 30 (RANGE):**
+```
+vlan 10
+ name MGMT
+vlan 20
+ name INFRA
+vlan 30
+ name RANGE
+```
+`show vlan brief` confirmed all three as `active`, no ports assigned yet. Clean on the first attempt.
+
+**Step 5 — trunk port to pfSense (Gi1/0/3).** First identified which physical port NIC3 is actually cabled into via `show interfaces status` (read-only) — confirmed `Gi1/0/3` as the only port showing `connected`, matching Gb3/NIC3. Configured:
+```
+switchport mode trunk
+switchport trunk allowed vlan 10,20,30
+```
+- `switchport trunk encapsulation dot1q` was rejected (`% Invalid input detected`) — expected on this 2960X, which only supports 802.1Q natively (unlike 3560/3750 models, which need the encapsulation selected explicitly). Skipped, no impact.
+- **First pass missed the `switchport trunk allowed vlan 10,20,30` line** — it appears to have been dropped from the paste. `show interfaces trunk` still showed success (`trunking`, `802.1q`) but caught on closer inspection: "Vlans allowed on trunk" read `1-4094`, not `10,20,30`. Re-ran the missing line; second `show interfaces trunk` confirmed `10,20,30` correctly on both the "allowed" and "allowed and active" lines.
+- Interface flapped (`Gi1/0/3` down/up, `Vlan1` SVI down/up) twice — once after `switchport mode trunk`, once after restricting the VLAN list. Both were transient STP renegotiation, self-resolved within ~30 seconds each time. No action needed.
+
+**Step 6 — PC's management access port.** Initial plan was to use `Gi1/0/48` directly, but investigation revealed the PC's cable was actually running through the home dumb switch as a shared uplink — not a dedicated line. Putting `Gi1/0/48` into VLAN 10 access mode as originally planned would have pulled the entire dumb switch (and everything behind it) onto VLAN 10, not just the PC. Confirmed multiple other devices are plugged into that dumb switch, including a possibility the home router is among them — decided against consolidating the dumb switch into the managed switch for now, to avoid stacking a second, larger network change on top of an unverified one.
+
+**Fix:** used one of the two USB-to-Ethernet adapters (purchased for Phase C.5 SPAN duty, borrowed for this in the meantime) to run a dedicated point-to-point link from the PC directly into `Gi1/0/48`, bypassing the dumb switch entirely. PC's onboard NIC stays on the dumb switch/home network for normal internet; the USB adapter carries only lab management traffic.
+
+Also discovered during port selection: `Gi1/0/49` and `Gi1/0/50` still show `err-disabled` even after the full `write erase`/`reload` factory reset. Since `err-disabled` is normally caused by a runtime condition (port security, BPDU guard, storm-control, etc.) that a factory erase wipes clean, both coming back err-disabled with no config present points to a **hardware-level fault on those two specific ports**, not leftover configuration. Decided to avoid `Gi1/0/49`/`Gi1/0/50` going forward rather than spend time debugging a likely-dead port.
+
+With the dedicated link in place:
+```
+interface GigabitEthernet1/0/48
+ switchport mode access
+ switchport access vlan 10
+```
+`show vlan brief` confirmed `Gi1/0/48` listed under VLAN 10 (MGMT) and no longer under VLAN 1.
+
+**Saved config:** `copy running-config startup-config` → `Building configuration... [OK]`. Confirmed written to NVRAM.
+
+### Outcome
+- VLANs 10 (MGMT), 20 (INFRA), 30 (RANGE) created and active.
+- `Gi1/0/3` trunking correctly scoped to `10,20,30` only (not `1-4094`) — carries to pfSense's future LAN side (`vmbr3`).
+- `Gi1/0/48` in VLAN 10 access mode, now a dedicated point-to-point link from the PC (via USB-Ethernet adapter) — isolated from the dumb switch and everything behind it.
+- Switch config saved to NVRAM; survives reload.
+- **`Gi1/0/49` and `Gi1/0/50` flagged as likely hardware-faulty** — avoid using them.
+- One USB-to-Ethernet adapter is now in use for PC management access — remember to move it back before Phase C.5 needs it for SPAN, or confirm a second unit is available.
+- Phase A Step 3 (building the pfSense VM itself) is **still not done** — bridges `vmbr2`/`vmbr3` exist, but no VM is attached to them. This is the next step, ahead of Step 7 (pfSense VLAN interfaces), which can't happen until the VM exists.
+
+### Lessons
+1. **A missing line in a multi-line paste can silently succeed** — the trunk showed `trunking`/`802.1q` correctly even with `switchport trunk allowed vlan` missing, because "no errors" and "matches the intended config" are not the same check. Always compare *every* relevant field in the `→ expect:` output, not just whether the command was accepted.
+2. **`end` typed at the `Switch#` EXEC prompt (not inside a config sub-mode) is not a no-op** — IOS tries to resolve it as a hostname/telnet target instead, producing a DNS-lookup failure. Harmless, but confusing if unexpected. Only use `end` to exit a config sub-mode.
+3. **A "management port" assumption should be physically verified, not taken on faith** — the PC's cable was assumed to be a dedicated line but was actually a shared dumb-switch uplink. Confirmed via direct question before applying the VLAN assignment, avoiding an accidental home-network-wide VLAN 10 membership.
+4. **`Gi1/0/49`/`Gi1/0/50` remaining `err-disabled` after a full factory erase is a hardware-fault signal**, not a config leftover — `err-disabled` requires an active trigger condition to persist, and factory erase removes all such conditions. Avoid these two ports going forward.
 
 ---
 
-## 2026-07-21 — GitHub repo created, initial push
+## 2026-07-24 — pfSense VM built and installed (Phase A Step 3)
 
-**Phase:** B (pulled forward — Git setup normally starts in Phase B, done early since it was a natural stopping point)
-**Goal:** Get the SOC lab docs under version control and pushed to GitHub as the portfolio repo.
-**Rollback:** None needed — local `git init` is non-destructive; nothing existed on GitHub before this to lose.
-**Transcript:** PowerShell 7, `C:\Users\micha\SOC-Lab\Updated 7-16-2026`
+**Phase:** A
+**Goal:** Build the pfSense VM on `pve01`, attach it to the two existing bridges (`vmbr2` WAN, `vmbr3` LAN trunk), and get pfSense CE actually installed and booted.
+**Rollback:** None needed — new VM, no prior state. ISO confirmed present before starting; bridges re-verified live rather than trusted from the log (see Lessons).
+**Transcript:** session logs from today, pve01 console/web UI + PuTTY (switch, for pre-checks)
 
 ### What happened
-- Confirmed repo root: `C:\Users\micha\SOC-Lab\Updated 7-16-2026` (not the originally-planned
-  `C:\Users\micha\lab\soc-lab\` path — docs updated to match actual location).
-- Found Git installed per-user (`C:\Users\micha\AppData\Local\Programs\Git\cmd`), not per-machine.
-  `git` command failed in a stale PowerShell window and in an elevated (admin) PowerShell —
-  root cause: per-user installs only add to the user PATH, which an admin session doesn't
-  always load the same way. Fix: use a normal, non-elevated PowerShell window.
-- Created GitHub account (`SecurityJonesing`) and empty repo `SOC-LAB`
-  (`https://github.com/SecurityJonesing/SOC-LAB.git`), no README initialized.
-- Reorganized the local folder before first commit:
-  - Moved `logs/` out of the repo root to `C:\Users\micha\SOC-Lab\Logs\` (sibling folder,
-    matching the Cheatsheet's original intended structure) — keeps raw PuTTY/session
-    transcripts out of the public repo.
-  - Deleted a stray `files.zip` and a duplicate `SOC-Lab-Lesson-Plans.docx` that had ended up
-    inside `Diagrams/`.
-- Pre-push security review: scanned all tracked files (`build_log.md`, `LAB-BLUEPRINT.md`,
-  `agent-registry.md`, `PROJECT-INSTRUCTIONS.md`, and all `.docx` files converted via `pandoc`)
-  for real credentials, non-private IPs, MAC addresses, and serial numbers. None found —
-  all credentials in these files are placeholders, all IPs are private range or `8.8.8.8`.
-  Confirmed clean to publish.
-- `git init` → default branch created as `master` (not `main`).
-- `git add .`, `git commit -m "initial commit: SOC lab docs and build log"` —
-  15 files, 790 insertions.
-- `git remote add origin https://github.com/SecurityJonesing/SOC-LAB.git`
-- `git push -u origin master` — first attempt failed authentication (wrong GitHub username
-  entered in the browser sign-in prompt); corrected credential in Keeper vault, re-authenticated
-  as `SecurityJonesing`, push completed successfully: 18 objects, 1.72 MiB, new branch
-  `master` created on remote, local branch now tracks `origin/master`.
+
+**Pre-checks before touching Proxmox:**
+- Confirmed pfSense install media: `netgate-installer-v1.2-RELEASE-amd64.iso` present in `/var/lib/vz/template/iso/`. Note: Netgate no longer ships version-pinned pfSense ISOs directly — the "Netgate Installer" is a bootstrap image whose own version (v1.2) is unrelated to the pfSense version installed; the actual pfSense release is chosen later, inside the installer, once it has internet access.
+- Re-verified `vmbr2`/`vmbr3` live rather than trusting the 07-21 log entry (per gotcha #7): both initially showed `NO-CARRIER`/`DOWN` — traced to the Cisco switch simply being powered off since last session, not a real fault. Powered the switch back on; `eno3` came up (`LOWER_UP`) and `vmbr3` showed it as a forwarding member, matching `Gi1/0/3`'s `connected` status on the switch. `vmbr3`'s `ip -d link show` confirmed `vlan_filtering 1` — VLAN-aware flag genuinely active at the kernel level. Both bridges confirmed no IPv4 address (gotcha #1 still avoided).
+
+**VM creation (VM 102, named `pfsense`):**
+- OS: "Other" guest type, ISO = `netgate-installer-v1.2-RELEASE-amd64.iso`
+- Disk: 32GB, VirtIO SCSI
+- CPU/RAM: started at 2 cores/2GB; **bumped to 3 cores/4GB mid-install** because first-boot resource usage pegged out and installation was crawling. **TODO: revert to 2 cores/2GB (or whatever's actually needed) once past first-boot, if the higher allocation isn't required for steady-state operation.**
+- Network: **`net0` → `vmbr2`** (WAN), **`net1` → `vmbr3`** (LAN trunk) — deliberately NOT left on the wizard's default `vmbr1`. Both NICs: VirtIO model, **no VLAN Tag** (blank — the trunk needs to pass VLANs 10/20/30 through untagged at this layer; pfSense creates the actual VLAN sub-interfaces later in Step 7), **firewall checkbox left unchecked** on both (Proxmox's firewall layer would otherwise double-filter traffic pfSense is already meant to be the sole firewall for).
+- Confirmed `net0`/`net1` → `vmbr2`/`vmbr3` MAC pairing via the VM's Hardware tab before booting, to have an authoritative cross-check available during the installer's WAN/LAN interface-selection screens.
+
+**Installer walkthrough:**
+- WAN interface: `vtnet0` (confirmed via MAC match to `net0`/`vmbr2`) → DHCP client, VLAN tagging disabled (correct — WAN isn't a trunk)
+- LAN interface: `vtnet1` (confirmed via MAC match to `net1`/`vmbr3`, and independently corroborated by the switch already showing `Gi1/0/3` connected) → left at factory-default `192.168.1.1/24` static, DHCPD enabled 192.168.1.100-199, VLAN tagging disabled on this parent interface (correct — VLAN 10/20/30 sub-interfaces get created on top of this in Step 7, not configured here)
+- **Internet connectivity check failed** — WAN (`vmbr2`) had no physical cable yet at that point in the process; the Netgate Installer requires live internet access to fetch pfSense packages (they're not bundled in the small bootstrap ISO). **Fix:** identified and plugged NIC2's physical port into the dumb switch, confirmed via `ip link show eno2` showing `LOWER_UP`. Retried — WAN pulled a DHCP lease and the connectivity check passed.
+- Subscription validation: prompted for pfSense Plus vs CE (device has no active Plus subscription, as expected) → selected **Install CE**.
+- Software version: **2.8.1 (current stable)** — matches what was confirmed via web search before starting this phase.
+- Filesystem: ZFS, Stripe (no redundancy — correct/only option for a single virtual disk), GPT partitioning. All defaults, all appropriate.
+- Disk selection: single 32GB virtual disk, confirmed, destroyed/formatted (empty disk, no data at risk).
+- Installation completed cleanly (`pfSense Post Installation setup .. done`).
+- **Halted (not rebooted) before removing installer media** — detached the ISO from the VM's CD/DVD Drive (Hardware tab → "Do not use any media") to avoid it booting back into the installer. Proxmox needed a manual Stop after the guest's internal halt completed, since a FreeBSD-based halt doesn't power off the VM at the hypervisor level automatically.
+- **First real boot succeeded:** `pfSense 2.8.1-RELEASE amd64`, "Bootup complete". Console menu confirmed both interfaces live: **WAN (vtnet0): 192.168.0.131/24 via DHCP** (from the dumb switch), **LAN (vtnet1): 192.168.1.1/24 static** (factory default, to be replaced by VLAN 10/20/30 interfaces in Step 7).
 
 ### Outcome
-Repo live and public at `https://github.com/SecurityJonesing/SOC-LAB`. All 15 tracked files
-(docs, `build_log.md`, `Diagrams/`) confirmed pushed. `logs/` correctly excluded by living
-outside the repo folder rather than via `.gitignore`. Standard going-forward loop established:
-`git status` → `git add .` → `git commit -m "..."` → `git push` after every session.
+- **pfSense CE 2.8.1 installed and running** on VM 102 (`pfsense`), attached to `vmbr2` (WAN) and `vmbr3` (LAN trunk) correctly.
+- Phase A Step 3 is now **done**. Steps 4-6 (VLANs, trunk, management access port) were already done as of 2026-07-23 — Phase A is now fully caught up through Step 6, with **Step 7 (create matching VLAN interfaces in pfSense's GUI) next**.
+- WAN's physical cable (NIC2 → dumb switch) is not actually temporary — it matches the blueprint's intended final WAN destination, so no cable move needed later.
+- **Outstanding TODO:** VM resources were bumped to 3 cores/4GB RAM mid-install to push through a slow first boot. Revisit once steady-state load is known — may not need to stay this high.
+- pfSense's web GUI is not yet reachable from the management PC — LAN currently only knows `192.168.1.1/24`, not VLAN 10's real subnet. That gap closes in Step 7.
 
 ### Lessons
-1. **Per-user Git installs need a normal (non-admin) PowerShell window** — an elevated session
-   may not load the user PATH where `git.exe` actually lives, producing a "term not recognized"
-   error that looks like Git isn't installed at all when it actually is.
-2. **Do the "anything secret in here?" check before `git add .`, not after `git push`.**
-   Once pushed, it's permanent history even if deleted in a later commit.
-3. **Keep raw session logs physically outside the Git repo folder** (sibling directory) rather
-   than relying on `.gitignore` — simpler, and removes any chance of an accidental `git add -f`
-   or misconfigured ignore rule exposing them later.
+1. **The Netgate Installer needs internet access on WAN to complete installation** — it's a bootstrap image that fetches the actual pfSense packages live, not a self-contained ISO. Plan for WAN to have real connectivity before starting a pfSense install, not just before going into production.
+2. **A build_log entry is a snapshot, not a guarantee** — `vmbr2`/`vmbr3` showing `NO-CARRIER` today wasn't a config regression, just the switch being powered off since last session. Re-verifying live state before trusting it (gotcha #7) caught this immediately instead of chasing a phantom problem.
+3. **VM resource allocation may need temporary headroom for first boot/install**, separate from steady-state requirements — worth revisiting after initial setup rather than leaving an oversized allocation permanently by default.
+4. **MAC address cross-checking between Proxmox's Hardware tab and the guest OS's interface-selection screen is a reliable way to confirm `vtnetN` → `netN` → bridge mapping**, more trustworthy than assuming numbering order alone.
