@@ -1,6 +1,6 @@
 ## About me
 
-I'm an IAM/SOC-focused systems administrator. I left a prior security-focused role on purpose, to move into administration and engineering — I wanted a firsthand grasp of the systems I'd otherwise only be defending from the outside, instead of staying purely on the analyst side of the fence. I'm currently between roles after a layoff, and this lab is how I'm keeping that hands-on learning going rather than letting the gap sit idle.
+I'm a systems administrator with a background in IAM and SOC operations. Early in my career I worked security analyst-side, and what I took away from that was a clear sense of where I wanted to build my career going forward: administration and engineering. Understanding how systems are actually built, configured, and maintained gives me a level of depth I couldn't get staying purely on the analyst side, and it's the direction I've been deliberately growing in ever since. This lab is part of that — a way to keep building real, hands-on infrastructure skill on my own time, especially useful right now while I'm between roles after a layoff.
 
 My background includes time at Arctic Wolf doing SOC triage, the U.S. Air Force, Wells Fargo, Medtronic, and Thomson Reuters, and most recently administering Entra ID, Intune, and Conditional Access policy for an environment of about 350 users. I hold CompTIA A+, Network+, Security+, CySA+, and PenTest+ certifications.
 
