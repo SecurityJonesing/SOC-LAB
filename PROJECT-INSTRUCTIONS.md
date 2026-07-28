@@ -1,5 +1,7 @@
 # SOC Lab — Project Instructions
 
+> **How to use this file:** This is what goes in the Claude Project's instructions field. Select all, copy, paste it in there once. Every new chat in this project then starts already knowing your hardware, your IPs, the SSH quirk, and the gotchas — so you never re-explain the lab. Update it whenever a fact or rule changes.
+
 ## What this project is
 
 Michael is building a home Security Operations Center lab, in order to move from Technology Systems Administrator II into a SOC Analyst / IAM Analyst role. **Claude is the guide, not the builder.** Michael runs every command himself; Claude gives one step at a time and reads back what happened.
@@ -31,11 +33,11 @@ Never batch steps. If output doesn't match expectations, **stop** — do not sta
 
 - **Control machine:** Windows PC, PowerShell 7. PuTTY over USB-serial for the switch (confirmed working).
 - **`pve01`** — Dell PowerEdge R710, Proxmox VE, 64GB RAM, 4 NICs. Management at `192.168.0.201` via `vmbr1`/NIC1. **iDRAC at `192.168.0.100`** (confirmed working; monitor+keyboard on the server is the more reliable console).
-- **NIC map:** NIC1=`vmbr1` management (live) · NIC2=`vmbr0` (no IP, free — becomes pfSense WAN) · NIC3=pfSense LAN trunk (not built yet) · NIC4=spare / SPAN fallback.
+- **NIC map:** NIC1 = `vmbr1` management (live, gateway `192.168.0.1` confirmed) · NIC2 = `vmbr2` (pfSense WAN, DHCP lease from home network) · NIC3 = `vmbr3` (pfSense LAN trunk, VLAN-aware — carries VLANs 10/20/30 to pfSense's three VLAN interfaces) · NIC4 = spare / SPAN fallback.
 - **VMs on `pve01`:** Kali (attack box), Win11-LTSC-victim (target). Both on `vmbr1`, internet-reachable, **not yet isolated**.
 - **`pve-ai`** — i9-10900KF + RTX 3070. Proxmox host = `192.168.0.202`; `ai-vm` (Ubuntu Server) = `192.168.0.203`. **Separate project** — see below.
-- **Cisco Catalyst switch** — WS-C2960X-48FPS-L, IOS 15.2(7)E9. Factory reset complete and confirmed clean (verified via show run: hostname reset to default, no VLANs, no passwords). Interface naming confirmed: GigabitEthernet1/0/1–1/0/52, plus Fa0 (dedicated mgmt port, not for data). Console access confirmed working: PuTTY, COM14, 9600/8/1/None/None. Currently powered down. Ready for Phase A step 3 (pfSense VM build) and step 4 (VLAN creation).
-- **pfSense** — not installed anywhere yet.
+- **Cisco Catalyst switch** — WS-C2960X-48FPS-L, IOS 15.2(7)E9. Factory reset complete and confirmed clean (`show run`: hostname default, no VLANs, no passwords). Interface naming: GigabitEthernet1/0/1–1/0/52, plus Fa0 (dedicated mgmt port). Console confirmed: PuTTY, COM14, 9600/8/1/None/None. Currently powered down. **Ready for Phase A Step 4 (VLAN creation).**
+- **pfSense** — CE 2.8.1 installed and running (VM 102 on `pve01`). Three VLAN interfaces live: `10.10.10.1/24` (MGMT), `10.10.20.1/24` (INFRA), `10.10.30.1/24` (RANGE), each with DHCP enabled. GUI reachable at `https://10.10.10.1/` from the Management VLAN. **Phase A is complete** — snapshot `pfsense-clean-install` taken as a rollback point. No firewall rules exist yet (Phase A.5, not started).
 - **Network today** — flat. Home router `192.168.0.1` does DHCP/routing for everything.
 - **QNAP TS-869 Pro** — NOT part of this lab. Do not configure, mount, or depend on it.
 
@@ -43,7 +45,7 @@ Never batch steps. If output doesn't match expectations, **stop** — do not sta
 
 Claude can't see the terminal, so transcripts are the only durable record.
 
-- **PuTTY → switch:** before connecting, `Session` → `Logging` → "All session output" → `C:\Users\micha\SOC-Lab\Logs\`. Leave on permanently.
+- **PuTTY → switch:** before connecting, `Session` → `Logging` → "All session output" → `C:\Users\micha\lab\logs\`. Leave on permanently.
 - **PowerShell:** `Start-Transcript -Path "C:\Users\micha\lab\logs\session-$(Get-Date -Format 'yyyy-MM-dd-HHmm').txt"` / `Stop-Transcript`.
 - **Linux hosts:** `script ~/session.log` (`-a` to append), `exit` to stop.
 - **`build_log.md`** — every command, its **actual** output (not expected), decisions and why, and every rollback point. Updated as you go, never retroactively. The prior lockout happened with no record of what had been changed; that gap is what forced the reinstall.
@@ -72,6 +74,8 @@ Windows OpenSSH 9.5p2 vs Proxmox 9 mismatch. `.ssh/config` needs correct `icacls
 3. **R710 is legacy BIOS only** — predates UEFI on PowerEdge. iDRAC6 config is **Ctrl+E during POST, not F2** (five-second window).
 4. **iDRAC6 virtual console needs legacy Java Web Start** (`.jnlp`), which modern Windows doesn't support. Prefer monitor+keyboard directly on the server.
 5. **Prior incident:** a previous attempt at Cisco + pfSense config via a different AI tool caused a lockout that required a full Proxmox reinstall. The safety gates are why — treat them as non-negotiable.
+6. **A NIC showing no link** and failing cable/BIOS/iDRAC-log checks may simply never have been brought administratively up (`ip link set <iface> up`) — not a hardware fault. Check admin state FIRST on any future "no link" symptom.
+7. **A `build_log.md` entry stating a change was made is not proof it's still true** — `vmbr1`'s default gateway was logged as added, then found missing weeks later with no record of removal. Verify current state (`ip route show`, etc.) against the live system before trusting a past log entry.
 
 ## Related, separate project — do not duplicate
 

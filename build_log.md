@@ -497,3 +497,50 @@ interface GigabitEthernet1/0/48
 2. **A build_log entry is a snapshot, not a guarantee** — `vmbr2`/`vmbr3` showing `NO-CARRIER` today wasn't a config regression, just the switch being powered off since last session. Re-verifying live state before trusting it (gotcha #7) caught this immediately instead of chasing a phantom problem.
 3. **VM resource allocation may need temporary headroom for first boot/install**, separate from steady-state requirements — worth revisiting after initial setup rather than leaving an oversized allocation permanently by default.
 4. **MAC address cross-checking between Proxmox's Hardware tab and the guest OS's interface-selection screen is a reliable way to confirm `vtnetN` → `netN` → bridge mapping**, more trustworthy than assuming numbering order alone.
+
+---
+
+## 2026-07-25 — pfSense VLAN interfaces, setup wizard, first snapshot (Phase A Step 5, acceptance check passed)
+
+**Phase:** A
+**Goal:** Create the three VLAN sub-interfaces inside pfSense, assign them real subnets, confirm the web GUI is reachable from the Management VLAN, and take a clean rollback snapshot before any firewall rules exist.
+**Rollback:** Snapshot `pfsense-clean-install` taken at the end of this session, VM running (RAM not included) — first real rollback point for this VM.
+**Transcript:** session logs from today, Proxmox VM console (pfSense) + browser (pfSense GUI)
+
+### What happened
+
+**VLAN sub-interfaces created** via console menu option `1) Assign Interfaces`, entering `y` to configure VLANs:
+- `vtnet1.10` (tag 10, parent `vtnet1`) — Management
+- `vtnet1.20` (tag 20, parent `vtnet1`) — Infra
+- `vtnet1.30` (tag 30, parent `vtnet1`) — Range
+
+Confirmed WAN/LAN/OPT1/OPT2 mapping before applying: WAN→`vtnet0`, LAN→`vtnet1.10`, OPT1→`vtnet1.20`, OPT2→`vtnet1.30`.
+
+**IP assignment** via console menu option `2) Set interface(s) IP address`, once per interface — same pattern each time (static, no upstream gateway on any of the three, IPv6 skipped, DHCP server enabled, kept HTTPS for the webConfigurator):
+- LAN (`vtnet1.10`): `10.10.10.1/24`, DHCP range `10.10.10.100`–`10.10.10.199`
+- OPT1 (`vtnet1.20`): `10.10.20.1/24`, DHCP range `10.10.20.100`–`10.10.20.199`
+- OPT2 (`vtnet1.30`): `10.10.30.1/24`, DHCP range `10.10.30.100`–`10.10.30.199`
+
+**Client-side confirmation:** PC's USB-Ethernet adapter picked up a DHCP lease on the first attempt — `10.10.10.100/24`, gateway `10.10.10.1`. Browsed to `https://10.10.10.1/` and reached pfSense's login page (self-signed cert warning, expected/accepted). **This is Phase A's acceptance check, passed.**
+
+**Logged in** with default credentials (forced password change immediately — expected pfSense CE behavior, kept as a real security step rather than skipped).
+
+**Ran the pfSense setup wizard** (auto-prompted on first GUI login):
+- General info: hostname `pfSense`, domain `home.arpa` (already correct default, not `.local`) — left as-is.
+- NTP: kept default time server (`2.pfsense.pool.ntp.org`, Netgate's own pool) — no reason to point elsewhere.
+- **WAN configuration screen — one real fix required here:** "Block RFC1918 Private Networks" was checked by default. **Unchecked it.** This build's WAN doesn't face a real ISP — it faces the home network (`192.168.0.0/24`, itself an RFC1918 range), so leaving this checked would have caused pfSense to block its own WAN's legitimate upstream traffic as if it were spoofed. Left "Block bogon networks" checked — that one's still correct regardless of WAN's private/public nature.
+- LAN configuration screen: showed the already-configured `10.10.10.1/24` correctly — confirms the wizard picked up existing state rather than overwriting it.
+- Reloaded configuration, wizard completed cleanly.
+
+**Snapshot taken:** `pfsense-clean-install`, VM 102, live (VM running throughout, RAM not included in the snapshot — unnecessary for a config checkpoint like this). Confirmed via the Snapshots tab.
+
+### Outcome
+- **Phase A is now fully complete.** All six steps done: VLANs created, trunk configured and scoped correctly, PC's management access isolated via dedicated USB-adapter link, pfSense VM built and installed, VLAN interfaces created and IP-addressed, GUI reachability confirmed from the Management VLAN.
+- pfSense reachable at `https://10.10.10.1/` from any device on VLAN 10.
+- **First rollback point for the pfSense VM exists** (`pfsense-clean-install`) — a clean, no-firewall-rules-yet state to return to if Phase A.5's rule-writing goes sideways.
+- **Next up: Phase A.5 — writing the Range VLAN isolation rule.** Per the project's standing two-tier rule, this is core security logic: Claude drafts a reference version and explains the reasoning, Michael writes the final rule that actually gets applied.
+
+### Lessons
+1. **"Block RFC1918 Private Networks" on WAN is the wrong default for any home-lab topology where WAN's upstream is itself a private network** (a home router, not a real ISP handoff). This is a genuine pfSense wizard default that needs deliberate correction in setups like this one — it isn't obviously wrong until you think through what WAN is actually plugged into.
+2. **The pfSense setup wizard re-displaying already-configured values (LAN's `10.10.10.1/24`) rather than blank defaults is a good sign**, not a coincidence — it confirms the wizard is reading and preserving existing config rather than silently resetting it. Worth explicitly checking for on any wizard that runs after manual pre-configuration.
+3. **A live VM snapshot (no RAM) is sufficient for a configuration checkpoint** — no need to stop the VM or capture memory state when the goal is "return to this config later," not "resume this exact in-progress session."

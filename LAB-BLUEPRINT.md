@@ -23,7 +23,7 @@
 |---|---|---|---|---|
 | NIC1 | `eno1` | `vmbr1` | Proxmox host management — `192.168.0.201/24`, gateway `192.168.0.1` confirmed | ✅ Confirmed working |
 | NIC2 | `eno2` | `vmbr2` (no IP) | pfSense WAN — plugs into home dumb switch | ✅ Attached to pfSense VM (net0), DHCP lease `192.168.0.131/24` confirmed |
-| NIC3 | `eno3` | `vmbr3` (no IP, VLAN-aware) | pfSense LAN — 802.1Q trunk to Cisco switch, carries all lab VLANs | ✅ Attached to pfSense VM (net1), trunk live, VLAN interfaces not yet created (Step 5 next) |
+| NIC3 | `eno3` | `vmbr3` (no IP, VLAN-aware) | pfSense LAN — 802.1Q trunk to Cisco switch, carries all lab VLANs | ✅ Attached to pfSense VM (net1), all three VLAN interfaces created and IP-addressed |
 | NIC4 | `eno4` | — | Spare — **fallback SPAN destination NIC** if USB adapters prove unreliable; otherwise backup/migration link | ✅ Confirmed link-up 2026-07-21; otherwise unused |
 
 **Current bridge state (confirmed working):** All existing VMs — **Kali** and **Win11-LTSC-victim** — are consolidated on `vmbr1` (NIC1) as the single live bridge, and both reach the internet. `vmbr2` (NIC2) carries pfSense's WAN NIC, live with a DHCP lease from the dumb switch. `vmbr3` (NIC3) carries pfSense's LAN trunk NIC — VLAN-aware, trunk confirmed passing VLANs 10/20/30, VLAN sub-interfaces not yet created inside pfSense. `pve01` itself is fully patched (kernel `7.0.14-5-pve` as of 2026-07-21).
@@ -47,7 +47,7 @@
 
 ### Network — current state
 - Home router (192.168.0.1) does DHCP/routing for everything today — flat network, no segmentation
-- pfSense CE 2.8.1 installed and running (VM 102), WAN and LAN attached to the correct bridges — VLAN interfaces inside pfSense not yet created (Step 5)
+- pfSense CE 2.8.1 installed and running (VM 102), all three VLAN interfaces (`10.10.10.1/24` MGMT, `10.10.20.1/24` INFRA, `10.10.30.1/24` RANGE) created and confirmed reachable — **Phase A complete**
 - Cisco switch identified (WS-C2960X-48FPS-L, IOS 15.2(7)E9; interface naming `GigabitEthernet1/0/1`–`1/0/52` plus `Fa0` dedicated mgmt port), factory reset complete and confirmed clean (`show run`: hostname default, no VLANs, no passwords), console access via USB-serial + PuTTY confirmed working (COM14, 9600/8/1/None/None). Currently powered down. **Ready for Phase A step 4 (VLAN creation).**
 - iDRAC recovered and secured: `https://192.168.0.100`, DHCP reservation set on home router
 
@@ -108,8 +108,8 @@ Mgmt VLAN  Infra VLAN   Range VLAN     SPAN monitor port
    - VM resources temporarily bumped to 3 cores/4GB RAM to push through a slow first boot — revisit and right-size after steady-state load is known.
    - Snapshot the VM now that initial setup is complete, before any firewall rules are added
 4. ✅ **Done (2026-07-23)** — Configured switch: three VLANs created (Management, Infra, Range), NIC3's switch port (`Gi1/0/3`) as an 802.1Q trunk carrying all three VLANs, PC's management port (`Gi1/0/48`, via dedicated USB-Ethernet adapter link) assigned to the Management VLAN
-5. **← Next up.** In pfSense, create matching VLAN interfaces on the LAN side, assign subnets to each
-6. **Acceptance check:** your PC (on Management VLAN) can reach pfSense's web UI and `192.168.0.201` (Proxmox). Do not proceed to Phase B until this is confirmed.
+5. ✅ **Done (2026-07-25)** — In pfSense, created matching VLAN interfaces on the LAN side: `10.10.10.1/24` (MGMT), `10.10.20.1/24` (INFRA), `10.10.30.1/24` (RANGE), each with DHCP enabled. Ran the setup wizard — unchecked "Block RFC1918 Private Networks" on WAN (required, since WAN's upstream is the private home network, not a real ISP).
+6. ✅ **Acceptance check passed (2026-07-25):** PC (on Management VLAN, via dedicated USB-adapter link) reached pfSense's web UI at `https://10.10.10.1/`. **Phase A is complete.** Snapshot `pfsense-clean-install` taken as a rollback point before any firewall rules exist.
 
 ### Phase A.5 — Isolation Rule
 1. Write (do not yet apply) a pfSense firewall rule: Range VLAN → deny all, except one explicit allow to Infra VLAN's Wazuh ingest port
