@@ -6,7 +6,7 @@ I took a flat, unmanaged home network and rebuilt it from scratch into something
 
 I'm a systems administrator with a background in IAM and SOC operations. Early in my career I worked analyst-side, and what I took away from that was a clear sense of where I wanted to build my career going forward: administration and engineering. Understanding how systems are actually built, configured, and maintained gives me a level of depth I couldn't get staying purely on the analyst side, and it's the direction I've been deliberately growing in ever since. This lab is part of that — a way to keep building real, hands-on infrastructure skill on my own time, especially useful right now while I'm between roles after a layoff.
 
-My background includes time at Arctic Wolf doing SOC triage, the U.S. Air Force, Wells Fargo, Medtronic, and Thomson Reuters, and most recently administering Entra ID, Intune, and Conditional Access policy for an environment of about 350 users. I hold CompTIA A+, Network+, Security+, CySA+, and PenTest+ certifications.
+My background includes time at Arctic Wolf doing SOC triage, the U.S. Air Force, Wells Fargo, Medtronic, and Thomson Reuters, and most recently administering Entra ID, Intune, and Conditional Access policy for an environment of about 350 users. I hold CompTIA A+, Network+, Security+, CySA+, and PenTest+(expired) certifications.
 
 ## What this is
 
