@@ -37,7 +37,7 @@ Full architecture detail, including the build phases and every hardware/network 
 | Phase | What | Status |
 |---|---|---|
 | A | Network rebuild — VLANs, trunk, pfSense | ✅ Complete |
-| A.5 | Range VLAN isolation firewall rule | 🔜 Next |
+| A.5 | Range VLAN isolation firewall rule | 🟡 Rule written and applied — isolation not yet verified live (awaits Phase B VM move to Range VLAN) |
 | B | Docker/Git substrate + Wazuh SIEM | Planned |
 | C | Detection engineering (Atomic Red Team + custom rules) | Planned |
 | C.5 | Network visibility (SPAN + Suricata) | Planned |
@@ -70,7 +70,7 @@ Docx Files/            — printable workbook versions of the above (optional re
 
 ## Tech stack
 
-`Proxmox VE` · `pfSense` · `Cisco IOS` · `Wazuh` · `Suricata` · `Shuffle (SOAR)` · `Docker` · `Ollama` · `Git`
+`Proxmox VE` · `pfSense` · `Cisco IOS` · `Wazuh` · `Suricata` · `Shuffle (SOAR)` · `n8n` · `Docker` · `Ollama` · `Git`
 
 ---
 

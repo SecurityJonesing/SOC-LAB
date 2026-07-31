@@ -544,3 +544,59 @@ Confirmed WAN/LAN/OPT1/OPT2 mapping before applying: WAN→`vtnet0`, LAN→`vtne
 1. **"Block RFC1918 Private Networks" on WAN is the wrong default for any home-lab topology where WAN's upstream is itself a private network** (a home router, not a real ISP handoff). This is a genuine pfSense wizard default that needs deliberate correction in setups like this one — it isn't obviously wrong until you think through what WAN is actually plugged into.
 2. **The pfSense setup wizard re-displaying already-configured values (LAN's `10.10.10.1/24`) rather than blank defaults is a good sign**, not a coincidence — it confirms the wizard is reading and preserving existing config rather than silently resetting it. Worth explicitly checking for on any wizard that runs after manual pre-configuration.
 3. **A live VM snapshot (no RAM) is sufficient for a configuration checkpoint** — no need to stop the VM or capture memory state when the goal is "return to this config later," not "resume this exact in-progress session."
+
+---
+
+## 2026-07-30 — Range isolation rule written and applied (Phase A.5)
+
+**Phase:** A.5
+**Goal:** Write and apply the pfSense Range-VLAN isolation rule — deny all outbound from Range, with one explicit allow to Infra's Wazuh ingest port.
+**Rollback:** Proxmox snapshot `pre-isolation-rule` (VM 102, taken via `qm snapshot 102 pre-isolation-rule` from the `pve01` shell — confirmed via `Logical volume "snap_vm-102-disk-0_pre-isolation-rule" created`). pfSense config also exported as XML via Diagnostics > Backup & Restore > Download Configuration, saved to `C:\Users\micha\SOC-Lab\Logs\`.
+**Transcript:** session recording on throughout (PowerShell transcript).
+
+### What happened
+
+**Gate items confirmed before any firewall change:**
+1. Fresh Proxmox snapshot `pre-isolation-rule` taken on VM 102 — succeeded cleanly.
+2. pfSense XML config exported and saved locally, opened to confirm it wasn't empty.
+3. Session recording confirmed on.
+
+**Interface labels renamed for clarity** (cosmetic only, no functional change): LAN → MGMT10, OPT1 → INFRA20, OPT2 → RANGE30, via Interfaces > [interface] > Description, applied once after all three renames. Firewall > Rules tabs picked up the new names automatically.
+
+**Rule 1 — the allow, built on the RANGE30 tab:**
+- Action: Pass
+- Interface: RANGE30
+- Address Family: IPv4
+- Protocol: TCP
+- Source: RANGE30 subnets
+- Destination: INFRA20 subnets *(placeholder — Wazuh doesn't exist until Phase B; to be tightened to Wazuh's single host IP once built)*
+- Destination Port Range: 1514 to 1514
+- Description: `allow range -> wazuh agent ingest ONLY`
+
+**Rule 2 — the default deny, built second:**
+- Action: Block
+- Interface: RANGE30
+- Address Family: IPv4
+- Protocol: any
+- Source: RANGE30 subnets
+- Destination: any
+- Description: `default deny - range is isolated`
+
+Rules were built and read back field-by-field using Claude in Chrome in a strict "point/describe only, never click or type" mode — the extension highlighted each field and stated the value to enter; every field was typed in by hand and confirmed via screenshot before Save.
+
+**Reordering gotcha, caught live:** dragged Rule 2 to confirm position relative to Rule 1. Discovered that a drag-to-reorder is **not committed by the drag alone** — clicking **Apply Changes** immediately after a drag (without an intervening **Save** on the rule list) triggered pfSense's own "unsaved changes" warning. Cancelled out of that warning, clicked **Save** on the rule list first (which committed the new order), *then* clicked Apply Changes. Confirmed the browser-level warning is a real safety net here, not just a mechanical prompt — it caught exactly the failure mode it exists to catch.
+
+**Applied successfully:** pfSense returned "The changes have been applied successfully. The firewall rules are now reloading in the background," rule order preserved on reload (Pass above Block, confirmed on both interface and description columns).
+
+**Post-apply sanity check:** confirmed continued access to the pfSense GUI from MGMT10 immediately after Apply — the rule set only targets RANGE30, MGMT10 untouched, but verified rather than assumed per the standing "confirm console/recovery access" rule.
+
+### Outcome
+- Both rules live on the RANGE30 interface: Pass (RANGE30→INFRA20 subnets, TCP 1514) above Block (RANGE30→any, any).
+- pfSense GUI access from MGMT10 confirmed unaffected.
+- **Rule exists and is correctly scoped, but isolation is not yet acceptance-tested live** — Kali and Win11-LTSC-victim are still on `vmbr1` (flat network), not yet moved to the Range VLAN. That move is Phase B steps 6–7. The real "no internet, no home net, no MGMT, only Wazuh:1514" test can't run until a VM actually sits on RANGE30.
+- Destination on Rule 1 (INFRA20 subnets) is intentionally broader than the final design (single Wazuh host) — revisit once Wazuh is deployed in Phase B.
+
+### Lessons
+1. **A drag-to-reorder in pfSense's rule list is not committed until you click Save on the rule list itself** — clicking Apply Changes right after a drag, with no Save in between, triggers pfSense's "unsaved changes" warning rather than silently applying the old order. Sequence going forward: drag → **Save** → **Apply Changes**.
+2. **Renaming interface descriptions (LAN/OPT1/OPT2 → MGMT10/INFRA20/RANGE30) is purely cosmetic** but meaningfully reduces the chance of picking the wrong tab under pressure — worth doing early in any pfSense build, before writing rules against generic slot names.
+3. **A rule being applied cleanly is not the same as the isolation being proven.** Phase A.5's acceptance check (no internet/no home net/no MGMT reachability from an actual Range-VLAN device) can't run until Phase B moves a real VM onto RANGE30 — don't mark this phase fully complete until that check has actually run.
