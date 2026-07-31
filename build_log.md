@@ -600,3 +600,55 @@ Rules were built and read back field-by-field using Claude in Chrome in a strict
 1. **A drag-to-reorder in pfSense's rule list is not committed until you click Save on the rule list itself** — clicking Apply Changes right after a drag, with no Save in between, triggers pfSense's "unsaved changes" warning rather than silently applying the old order. Sequence going forward: drag → **Save** → **Apply Changes**.
 2. **Renaming interface descriptions (LAN/OPT1/OPT2 → MGMT10/INFRA20/RANGE30) is purely cosmetic** but meaningfully reduces the chance of picking the wrong tab under pressure — worth doing early in any pfSense build, before writing rules against generic slot names.
 3. **A rule being applied cleanly is not the same as the isolation being proven.** Phase A.5's acceptance check (no internet/no home net/no MGMT reachability from an actual Range-VLAN device) can't run until Phase B moves a real VM onto RANGE30 — don't mark this phase fully complete until that check has actually run.
+---
+
+## 2026-07-31 — Ubuntu Server VM built (Phase B Step 1), Infra outbound rules written and live-tested
+
+**Phase:**       B (Step 1)
+**Goal:**        Build the Ubuntu Server VM on pve01/Infra VLAN for the Docker/Wazuh substrate; enable OpenSSH. Along the way, write and verify the Infra outbound internet rule that had been sitting unresolved on the Open Decisions list.
+**Rollback:**    pfSense config exported as XML (`pfsense-config-2026-07-31-pre-infra-rules.xml`, saved to `C:\Users\micha\SOC-Lab\Logs\`) before any firewall rule changes. No Proxmox snapshot taken — additive rule changes only, no risk to MGMT10 access. VM 103 itself is new-build; no rollback needed pre-install.
+**Transcript:**  session logs from today — Proxmox console (VM 103) + pfSense GUI via Claude in Chrome + PowerShell (SSH)
+
+### What happened
+
+**ISO selection.** Confirmed Ubuntu 26.04 LTS is now current, but chose **24.04.4 LTS** deliberately — most Wazuh/Docker Compose guides are still written against 24.04, and 26.04 is only ~3 months old. First upload attempt was actually the **Desktop** ISO by mistake — caught before VM creation via the ISO Images list; correct Server ISO (`ubuntu-24.04.4-live-server-amd64.iso`, 3.17 GiB) uploaded and confirmed.
+
+**VM 103 (`ubuntu-soc-host`) created** on `pve01`: 8GB RAM (ballooning disabled, min=max), 100GB disk (VirtIO SCSI, `local-lvm`), network on `vmbr3` tagged VLAN 20 (Infra). **Two Confirm-screen catches before Finish:** cores/sockets were inverted (4 sockets x 1 core instead of 1 socket x 4 cores) - fixed. CPU type defaulted to x86-64-v2-AES instead of host - first edit didn't persist through to Confirm, caught and re-applied correctly on retry.
+
+**Installer walkthrough:** chose "Try or Install Ubuntu Server" (GA kernel, not HWE). Full "Ubuntu Server" install (not minimized). No third-party drivers, no Ubuntu Pro, no Featured Server Snaps selected (Docker will be installed via the apt-repo method per blueprint Phase B step 3, not snap or curl|sh).
+
+**Network config initially failed** ("autoconfiguration failed" on ens18) - root cause was simply that pfSense (VM 102) wasn't powered on. Confirmed the nightly full shutdown of pve01 + the Cisco switch is a current standing habit; flagged (not resolved) that this conflicts with the blueprint's "always-on service host" design intent for Phase D+ continuous monitoring. Powered switch -> pve01 -> pfSense VM back up in order; DHCP succeeded, ens18 got 10.10.20.100/24.
+
+**Mirror test failed** next: "Temporary failure resolving 'archive.ubuntu.com'". Root cause: INFRA20 (OPT1) had zero firewall rules - unlike RANGE30 (explicit Phase A.5 rules), OPT interfaces get no automatic allow rule the way the LAN-role interface does. Implicit deny blocked everything on that interface, including DNS queries to pfSense's own resolver - DHCP worked because it's handled below the packet-filter layer, but nothing else was. This is exactly the "Infra VLAN outbound internet rule" item that had been sitting on the Open Decisions list.
+
+**Wrote and applied 3 Pass rules on INFRA20** (config exported first): DNS (TCP/UDP 53), HTTP (TCP 80), HTTPS (TCP 443), all scoped INFRA20 subnets -> any. Chose scoped-by-port over a blanket allow-all, consistent with the least-privilege pattern used everywhere else in this build. Built via Claude in Chrome's point-and-describe workflow, one rule at a time. Two description-field mixups along the way - a stray "-> " copy-paste artifact, then an over-correction that replaced the description with a restated field dump - both caught on screenshot review and fixed manually. New standing convention adopted: rule descriptions now read "allow <INTERFACE_NAME> -> <PURPOSE> (<PORT>)" (e.g. "allow INFRA20 -> HTTPS (443)") - saved to memory for future sessions.
+
+**Retried mirror test - hung twice**, ~24 minutes unresponsive each time, both right after a small InRelease fetch succeeded but before the actual package index (Packages.gz) came through. Diagnosed via the installer's built-in debug shell (Help -> Enter shell / Ctrl+Z): nslookup resolved fine, curl -I succeeded instantly, but ping produced no result. Root cause: ICMP was completely unhandled on INFRA20. The three rules written covered TCP/UDP 53/80/443 only - no ICMP - which meant Path MTU Discovery had no way to signal "fragmentation needed" back to the client. Small single-packet transfers worked fine; anything requiring an oversized packet along the path hung indefinitely instead of failing cleanly.
+
+**Added a 4th rule - first attempt set Protocol to IGMP by mistake** (not ICMP) - caught reviewing the full rule list screenshot post-apply, corrected to ICMP/Subtype "any", re-applied. Confirmed working: curl -I succeeded on retry with a full 252KB package-index fetch, and the installer reported "This mirror location passed tests."
+
+**Console input became unreliable** immediately after (noVNC session split every keystroke into its own line, "command not found" per character) - unable to get a clean ping confirmation in-shell. Rather than keep fighting it, did a hard Stop/Start power cycle on VM 103 (no data at risk - pre-storage-configuration). Came back up cleanly into the installer at the same point.
+
+**Storage:** "Use an entire disk" + LVM (chosen over plain partitioning specifically for future resize flexibility). LUKS encryption explicitly skipped - this VM's operating pattern (nightly full power-cycle) would mean manually entering a passphrase every morning before Docker/Wazuh could even start; the threat model doesn't justify that recurring friction for a home lab. Caught a default-guided-partitioning gap: Subiquity's guided layout only allocated ~49G of the 98G volume group to /, leaving 49G stranded as unallocated free space. Manually edited ubuntu-lv to the full 97.996G, mounted at /, confirmed zero free space remaining before proceeding.
+
+**Profile:** name "Michael Mathews", hostname wazuh-host, username michael (matches ai-vm's existing account convention). OpenSSH server install checked, password auth left enabled (no key imported at install time; hardening to key-only auth using the existing id_ed25519 is a follow-up, not done tonight).
+
+**Install completed** - openssh-server installed, security updates pulled successfully (a second real-world confirmation the INFRA20 rules work, this time for actual package traffic rather than just the mirror test).
+
+**Mistake, mine:** instructed ejecting the ISO from the VM's CD/DVD drive before the installer's final "Reboot Now" prompt actually appeared, rather than after. The live installer environment's own root filesystem was mounted from that ISO - pulling it while still live caused casper.service/cdrom unmount failures and a stuck shutdown (~15 minutes at subiquity/late/run:), followed by a second failed reboot attempt (Failed unmounting cdrom.mount, Failed to start casper.service, Failed to execute shutdown binary) since the live environment had no working root fs left to shut down properly. No actual damage - curtin (partitioning, GRUB install, package installs) had already fully completed before this happened; only the dying live environment was affected. Recovered with a hard Stop/Start (CD/DVD already set to "Do not use any media") - booted cleanly straight into the installed OS.
+
+**Confirmed working:** console login as michael succeeded; ip a show ens18 showed 10.10.20.100/24 as expected; SSH from PowerShell (ssh michael@10.10.20.100) connected without the KexAlgorithms workaround pve01 needed. Host key fingerprint manually verified against the one printed in the VM's own boot log before accepting (matched exactly). Session ended with a graceful Shutdown (not a hard Stop, since this is now a real installed OS).
+
+### Outcome
+- **VM 103 (ubuntu-soc-host / hostname wazuh-host)** built and fully installed: Ubuntu Server 24.04.4 LTS, 8GB RAM/4 cores/host CPU, 100GB disk (single LVM volume, no leftover free space, no encryption), on vmbr3 tagged VLAN 20.
+- **SSH confirmed working**: michael@10.10.20.100, password auth. Key-only auth hardening still open for later.
+- **INFRA20 now has 4 firewall rules**: DNS (53), HTTP (80), HTTPS (443), ICMP (any subtype) - all INFRA20 subnets -> any, scoped rather than blanket-allow. This closes the "Infra VLAN outbound internet rule" item from Open Decisions, and it's now live-tested by a real OS install rather than just theoretical.
+- **Phase B Step 1 is complete.** Step 2 (host prep - vm.max_map_count, Docker install via apt) is next, not started tonight.
+- **Still open, unchanged:** pve01/switch nightly shutdown vs. the blueprint's always-on-service-host design - flagged, not resolved. Docx workbooks not touched tonight. agent-registry.md in project knowledge is still a stale build_log.md duplicate - parked, not urgent until Phase D.
+
+### Lessons
+1. **OPT interfaces in pfSense get zero rules by default - only the LAN-role interface gets an automatic allow-all.** Any new VLAN/segment beyond the original three needs its outbound rule written explicitly before assuming internet reachability, the same way Range needed its Wazuh-allow rule.
+2. **DNS-resolution-only failures and full-hang-after-partial-success are different symptoms pointing at different rule gaps.** The first meant no rules existed at all; the second - succeeding on small transfers, hanging on larger ones - specifically means ICMP/PMTUD is missing, not DNS or the main port itself.
+3. **A live installer's root filesystem may still be the mounted ISO, even well into the install process.** Don't eject virtual media until the installer's own explicit "Reboot Now" (or equivalent) prompt appears.
+4. **Subiquity's guided "entire disk" LVM layout doesn't use the full disk by default** - it conservatively splits it, leaving real leftover space unallocated unless you manually resize the logical volume up to the max before finishing storage configuration.
+5. **A stuck/glitchy noVNC console (garbled or per-character input) is often better solved by a clean power-cycle than by fighting the session** - especially pre-storage-configuration, where there's nothing to lose.
