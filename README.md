@@ -10,7 +10,7 @@ My background includes time at Arctic Wolf doing SOC triage, the U.S. Air Force,
 
 ## What this is
 
-A physical home lab — a Dell PowerEdge R710, a dedicated GPU inference box, and a managed Cisco switch — rebuilt into a segmented network with an intentionally isolated attack range, a SIEM correlating host and network telemetry, and (in progress) SOAR automation and AI-assisted triage. Every step is documented as it actually happened, including the mistakes — a previous configuration attempt caused a full lockout requiring a rebuild, which is why this repo exists in the first place: a real, timestamped record of every change and how to undo it.
+A physical home lab — a Dell PowerEdge R710, a dedicated GPU inference PC, and a managed Cisco switch — rebuilt into a segmented network with an intentionally isolated attack range, a SIEM correlating host and network telemetry, and (in progress) SOAR automation and AI-assisted triage. Every step is documented as it actually happened, including the mistakes — a previous configuration attempt caused a full lockout requiring a rebuild, which is why this repo exists in the first place: a real, timestamped record of every change and how to undo it.
 
 **This is not a tutorial clone.** Every rule, every detection, and every playbook here is either written by me or explicitly reviewed and finalized by me — AI assistance drafts references and explains options; it does not make the security decisions.
 
@@ -28,7 +28,7 @@ Home network → pfSense (firewall) → Cisco switch (VLAN trunk)
 - **Range VLAN** — an attacker and a target machine, fenced by a default-deny firewall rule. Real attack techniques run here safely because nothing gets out except one explicit logging path.
 - **Infra VLAN** — Wazuh (SIEM) correlates host-based telemetry (Sysmon) with network-based telemetry (Suricata, fed by a switch SPAN port) — two independent layers of detection for one incident.
 - **Management VLAN** — where I actually administer everything.
-- **AI layer** — a local GPU inference node (Ollama) handles routine triage and personal use for free; harder cases escalate to Claude or Grok on a threshold I set. Every AI agent with autonomous access is scoped, credentialed, and logged separately from my own actions — see `agent-registry.md`.
+- **AI layer** — a local PC with GPU inference node (Ollama) handles routine triage for free; harder cases escalate to Claude or Grok on a threshold I set. Every AI agent with autonomous access is scoped, credentialed, and logged separately from my own actions — see `agent-registry.md`.
 
 Full architecture detail, including the build phases and every hardware/network specific, is in [`LAB-BLUEPRINT.md`](./LAB-BLUEPRINT.md).
 
