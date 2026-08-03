@@ -35,7 +35,7 @@ I never batch steps. If output doesn't match expectations, I **stop** — don't 
 - **VMs on `pve01`:** Kali (attack), Win11-LTSC-victim (target), ubuntu-soc-host/wazuh-host (Docker/Wazuh substrate, Phase B). Kali and Win11-LTSC-victim currently on `vmbr1`, **not yet isolated**.
 - **`pve-ai`** — i9-10900KF + RTX 3070. Proxmox host `192.168.0.202`; `ai-vm` (Ubuntu Server) `192.168.0.203`. **Role: local GPU inference only (Ollama).** Only box that can do GPU inference — R710 has no usable GPU. **Separate project** — see below.
 - **Cisco Catalyst switch** — WS-C2960X-48FPS-L, IOS 15.2(7)E9. Factory reset, VLANs 10/20/30, `Gi1/0/3` trunk, `Gi1/0/48` mgmt access. Console: PuTTY, COM14, 9600/8/1/None/None. `Gi1/0/49`–`50` are hardware-faulty (err-disabled after factory erase) — avoid.
-- **pfSense** — CE 2.8.1 (VM 102 on `pve01`). Three VLAN interfaces: `10.10.10.1/24` (MGMT10), `10.10.20.1/24` (INFRA20), `10.10.30.1/24` (RANGE30), DHCP enabled. GUI `https://10.10.10.1/`. **Phase A complete** — snapshot `pfsense-clean-install`. RANGE30 has explicit Pass/Block rules (Phase A.5). INFRA20 has explicit outbound Pass rules for DNS/HTTP/HTTPS/ICMP (written during Phase B).
+- **pfSense** — CE 2.8.1 (VM 102 on `pve01`). Three VLAN interfaces: `10.10.10.1/24` (MGMT10), `10.10.20.1/24` (INFRA20), `10.10.30.1/24` (RANGE30), DHCP enabled. GUI `https://10.10.10.1/`. **Phase A complete** — snapshot `pfsense-clean-install`. RANGE30 has explicit Pass/Block rules (Phase A.5). INFRA20 has 5 explicit outbound Pass rules: DNS (53), HTTP (80), HTTPS (443), ICMP (any), SSH (22) — each new port/protocol needs its own explicit rule, since OPT interfaces get zero rules by default.
 - **Network today** — flat outside the VLANs I've built. Home router `192.168.0.1` does DHCP/routing for everything else.
 - **QNAP TS-869 Pro** — NOT lab storage. One future exception: may host a Proxmox **QDevice** in Container Station once clustering happens (see below). Otherwise don't configure/mount/depend on it.
 
@@ -113,12 +113,16 @@ Windows OpenSSH 9.5p2 vs Proxmox 9 mismatch. `.ssh/config` needs correct `icacls
 
 ## Source of truth
 
+The `.docx` workbooks that used to accompany this build have been retired (2026-08-03) — they duplicated what's already in the `.md` files below and went stale independently. These four files are now the entire documentation set:
+
 - **`LAB-BLUEPRINT.md`** — what I'm building and in what order (now includes Phase F SOAR + Phase G deferred)
-- **`SOC-Lab-Phase-Checklists.docx`** — printed workbook, with commands
-- **`SOC-Lab-Lesson-Plans.docx`** — concepts, diagrams, explain-it-back checkpoints
-- **`SOC-Lab-Cheatsheet.docx`** — commands, IPs, Recovery Ladder
 - **`build_log.md`** — the running, append-only record
-- **`agent-registry.md`** — every AI agent's scope, owner, lifecycle (`wazuh-triage-01`, `triage-router-01`) — currently a stale placeholder, needs real content once Phase D starts
+- **`agent-registry.md`** — every AI agent's scope, owner, lifecycle (`wazuh-triage-01`, `triage-router-01`) — real governance scaffold as of 2026-08-03, populated for real once Phase D starts
+- **`README.md`** — repo-facing overview, phase status table, diagram link
 - **ai-node project** — `C:\Users\micha\lab\ai-node\` — separate, don't duplicate
+
+## Repo layout note
+
+The repo root is `C:\Users\micha\SOC-Lab\Build-Transcripts\` (renamed from `Updated 7-16-2026` on 2026-08-03 — confirmed via `git remote -v` that this folder, not its parent, is where `.git` actually lives). `wazuh-host` also has its own clone at `~/soc-lab`, authenticated via a repo-scoped SSH deploy key (read/write), separate from `pve01`'s SSH key.
 
 Keep this file short and current. Update it whenever a rule, gotcha, or environment fact changes.
