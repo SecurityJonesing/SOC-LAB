@@ -145,60 +145,14 @@ Model: WS-C2960X-48FPS-L  IOS: 15.2(7)E9
 Interface naming: GigabitEthernet1/0/1 through 1/0/52 (shorthand Gi1/0/1), plus a separate Fa0 management por
 `switchport trunk encapsulation dot1q` supported? _______________
 ```
-Port      Name               Status       Vlan       Duplex  Speed Type
-Gi1/0/1                      notconnect   1            auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/2                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/3                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/4                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/5                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/6                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/7                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/8                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/9                      notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/10                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/11                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/12                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/13                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/14                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/15                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/16                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/17                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/18                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/19                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/20                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/21                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/22                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/23                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/24                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/25                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/26                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/27                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/28                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/29                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/30                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/31                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/32                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/33                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/34                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/35                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/36                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/37                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/38                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/39                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/40                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/41                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/42                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/43                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/44                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/45                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/46                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/47                     notconnect   10           auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/48                     notconnect   1            auto   auto 10/100/1000Ba                                                                                                                               seTX
-Gi1/0/49                     err-disabled 1            auto   auto unknown
-Gi1/0/50                     err-disabled 1            auto   auto unknown
-Gi1/0/51                     notconnect   1            auto   auto Not Present
-Gi1/0/52                     notconnect   1            auto   auto Not Present
-Fa0                          notconnect   routed       auto   auto 10/100BaseTX
+**Port summary** (`show interfaces status`, pre-config baseline):
+- **Gi1/0/1, Gi1/0/48-52:** VLAN 1 (default)
+- **Gi1/0/2-47:** VLAN 10 (leftover from a prior config — wiped in the factory reset below)
+- **Gi1/0/49-50:** err-disabled (later confirmed hardware-faulty, see 2026-07-23 entry)
+- **Gi1/0/51-52:** "Not Present" (unpopulated SFP/stacking ports)
+- **All ports:** notconnect — nothing cabled yet; Fa0 (mgmt-only) also notconnect
+
+Full raw output archived in the session transcript, not duplicated here.
 ```
 
 ### Lessons
