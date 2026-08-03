@@ -80,7 +80,7 @@ Home Router (192.168.0.1)
 |---|---|---|
 | A — Network Rebuild | ✅ Complete | VLANs, trunk, mgmt access port, pfSense VM + interfaces. Snapshot `pfsense-clean-install`. |
 | A.5 — Isolation Rule | ✅ Complete | Range default-deny + explicit Wazuh-port allow, applied and reviewed. |
-| **B — Docker/Git/Wazuh Substrate** | 🔄 In progress | **Step 1 done:** Ubuntu Server 24.04.4 LTS VM (`wazuh-host`, `10.10.20.100`) built, SSH confirmed. INFRA20 outbound internet rules (DNS/HTTP/HTTPS/ICMP) written and live-tested. Step 2 (host prep, Docker install) next. |
+| **B — Docker/Git/Wazuh Substrate** | 🔄 In progress | **Steps 1-4 done:** Ubuntu Server 24.04.4 LTS VM (`wazuh-host`, `10.10.20.100`) built, SSH confirmed; host prepped for Wazuh's indexer; Docker CE + Compose installed; Git configured with a dedicated SSH deploy key, repo cloned to `~/soc-lab`. INFRA20 now has 5 outbound rules (DNS/HTTP/HTTPS/ICMP/SSH), each added and live-tested as real work hit each gap. **Step 5 next:** deploying Wazuh via Compose. |
 | C — Detection Engineering | ⏳ Not started | Atomic Red Team + custom Wazuh rules |
 | C.5 — Network Visibility | ⏳ Not started | SPAN + Suricata |
 | D — AI Triage Layer | ⏳ Not started | Governed Wazuh triage agent (`wazuh-triage-01`) |
@@ -94,7 +94,6 @@ Home Router (192.168.0.1)
 - [`build_log.md`](./build_log.md) — running, append-only record of every change and its actual output
 - [`agent-registry.md`](./agent-registry.md) — scope/owner/lifecycle for every AI agent in the lab (in progress)
 - [`PROJECT-INSTRUCTIONS.md`](./PROJECT-INSTRUCTIONS.md) — environment reference used to drive Claude sessions
-- `SOC-Lab-Phase-Checklists.docx` / `SOC-Lab-Lesson-Plans.docx` / `SOC-Lab-Cheatsheet.docx` — printed workbook companions (`Docx Files/`)
 
 ## Related, separate project
 

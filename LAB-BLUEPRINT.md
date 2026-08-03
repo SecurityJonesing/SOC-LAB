@@ -1,7 +1,7 @@
 # LAB-BLUEPRINT.md
 ### Home SOC Lab — what we're building, and in what order
 
-**Purpose:** The shared map. What gets built, in what sequence, and how you know each phase actually worked. Michael runs the commands; Claude guides one step at a time and reads back the output. The Word companions carry the detail: `SOC-Lab-Phase-Checklists.docx` (the printed workbook, with commands) and `SOC-Lab-Lesson-Plans.docx` (the concepts behind each phase).
+**Purpose:** The shared map. What gets built, in what sequence, and how you know each phase actually worked. Michael runs the commands; Claude guides one step at a time and reads back the output. `build_log.md` carries the detailed, dated narrative of every step actually taken — the `.docx` workbooks that used to accompany this file were retired (2026-08-03) in favor of the `.md` files being the sole source of truth.
 
 **Working principle:** Build incrementally. One change, one test, then the next change. Do not stack multiple untested changes (network config in particular — this environment has a documented history of lockouts from big-bang changes).
 
@@ -120,11 +120,11 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 3. Apply; acceptance-check from a Range VM (no internet, no home net, no MGMT; Wazuh port retested end of Phase B).
 
 ### Phase B — Docker/Git/Wazuh Substrate
-1. Build Ubuntu Server VM on `pve01`, Infra VLAN. **8GB RAM / 4 cores / 100GB+ disk.** Enable OpenSSH.
-2. Host prep: `sudo sysctl -w vm.max_map_count=262144`, persist in `/etc/sysctl.conf`.
-3. Install Docker + Compose via the apt repo method (**not** `curl | sh`); verify package names live.
-4. Install Git, create/clone the repo. Pre-push secret check.
-5. Deploy Wazuh (manager + indexer + dashboard) via Compose; check the current tag against `documentation.wazuh.com`. Change the default password. **Mount rules host-side** (`./config/rules/local_rules.xml`).
+1. ✅ Build Ubuntu Server VM on `pve01`, Infra VLAN. **8GB RAM / 4 cores / 100GB+ disk.** Enable OpenSSH. *(2026-07-31 — `wazuh-host`, `10.10.20.100`, SSH confirmed. INFRA20 outbound rules written/tested along the way.)*
+2. ✅ Host prep: `sudo sysctl -w vm.max_map_count=262144`, persist in `/etc/sysctl.conf`. *(2026-08-03)*
+3. ✅ Install Docker + Compose via the apt repo method (**not** `curl | sh`); verify package names live. *(2026-08-03 — Docker CE 29.7.1, verified with `hello-world`, non-root usage enabled.)*
+4. ✅ Install Git, create/clone the repo. Pre-push secret check. *(2026-08-03 — cloned to `~/soc-lab` via a dedicated SSH deploy key. INFRA20 needed a 5th rule, port 22, discovered along the way. Pre-push secret check still to confirm on this box's own future commits.)*
+5. ⏳ Deploy Wazuh (manager + indexer + dashboard) via Compose; check the current tag against `documentation.wazuh.com`. Change the default password. **Mount rules host-side** (`./config/rules/local_rules.xml`). *(Not started.)*
 6. Move Win11-LTSC-victim to Range VLAN (check Hardware tab), install Sysmon + Wazuh agent pointed at the Sysmon channel.
 7. Move Kali to Range VLAN (check Hardware tab).
 8. Re-test the isolation rule: victim reaches Wazuh on 1514, still no internet.
