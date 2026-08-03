@@ -6,7 +6,7 @@ Every change, its **actual** output, the decision behind it, and every rollback 
 **Why this file exists:** a previous attempt at Cisco + pfSense configuration (via a different AI tool) caused a lockout. There was no record of what had been changed, so there was no way to reverse it — which is what forced a full Proxmox reinstall. This file is the answer to "what exactly did we change?" before you need to ask it.
 
 **What goes where:**
-- **Raw terminal output** → session transcripts in `C:\Users\micha\SOC-Lab\Updated 7-16-2026\logs` (PuTTY logging, `Start-Transcript`, `script`). Everything, including typos and dead ends.
+- **Raw terminal output** → session transcripts in `C:\Users\micha\SOC-Lab\Build-Transcripts\logs` (PuTTY logging, `Start-Transcript`, `script`). Everything, including typos and dead ends.
 - **This file** → the narrative. What you tried, what actually happened, what you decided, and how to undo it. Readable six months from now.
 
 **Rules:**
@@ -130,7 +130,7 @@ Ping replied. Proxmox web UI loaded at `192.168.0.201:8006`.
 **Phase:** A
 **Goal:** Identify the Cisco switch before writing any command for it — model, IOS version, real interface names.
 **Rollback:** None needed — `show` commands are read-only.
-**Transcript:** `C:\Users\micha\SOC-Lab\Updated 7-16-2026\logs` (PuTTY → Session → Logging → All session output, set BEFORE connecting)
+**Transcript:** `C:\Users\micha\SOC-Lab\Build-Transcripts\logs` (PuTTY → Session → Logging → All session output, set BEFORE connecting)
 
 ### What happened
 ```
