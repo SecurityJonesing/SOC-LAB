@@ -42,6 +42,8 @@ Home Router (192.168.0.1)
 - **Network-based** — SPAN port mirrors Range VLAN traffic -> Suricata
   (passive) -> alerts into Wazuh
 
+[Link To Lab Diagrams](https://securityjonesing.github.io/SOC-LAB/Diagrams/SOC-Lab-Diagrams.html)
+
 ## Hardware
 
 | Node | Spec | Role |
