@@ -656,3 +656,55 @@ Reviewed all five `.docx` files in `Docx Files/`: `SOC-Lab-Agent-Registry.docx` 
 3. **A folder's name inside a git repo, including the folder holding `.git` itself, is not tracked by git and can be renamed freely with zero repo-side consequences** — confirmed by testing directly rather than assuming. This also means "which folder is actually the repo root" is worth verifying with `git remote -v` rather than assumed from memory, especially in a project whose folder structure changed over time.
 4. **Deploy keys, not account-level SSH keys, are the right scope for a single-repo, single-purpose credential** — same least-privilege pattern used throughout this build (Wazuh's agent scope, Range's firewall rule). Worth defaulting to the narrower option unless a broader one is specifically needed.
 5. **Maintaining parallel documentation formats (markdown + docx) doubles the update burden for no real information gain**, when the markdown files are already the actual source of truth being edited live. Decided to consolidate rather than let the docx versions silently drift out of date the way they already had.
+
+---
+
+## 2026-08-03 — Wazuh deployed via Docker Compose (Phase B Step 5, in progress)
+
+**Phase:**       B (Step 5)
+**Goal:**        Deploy Wazuh (manager + indexer + dashboard) via Docker Compose on `wazuh-host`, pinned to a known-current release tag; confirm all three containers healthy and talking to each other; change the default admin password.
+**Rollback:**    Not needed — new deployment, no prior state. `wazuh-docker` kept as a separate local-only clone (`~/wazuh-docker`), deliberately not folded into the tracked `~/soc-lab` project repo.
+**Transcript:**  `session-2026-08-03-1901.txt` (PowerShell) + SSH session on `wazuh-host`
+
+### What happened
+
+**Version selection.** Confirmed via web search and cross-checked live against the repo's own tag list (`git tag -l`, `git describe --tags`) that `v4.14.6` is the current stable release — verified rather than trusted from the search result alone, per the standing "verify against live system" rule.
+
+**Cloned `wazuh-docker`** to `~/wazuh-docker` on `wazuh-host` (deliberately separate from `~/soc-lab`, the tracked project repo — this is third-party deployment tooling, not something we're authoring). Checked out cleanly at the `v4.14.6` tag (detached HEAD, expected).
+
+**Generated TLS certificates** via `docker compose -f generate-indexer-certs.yml run --rm generator` — root CA, admin, indexer, dashboard, and manager certs all created successfully. One cosmetic, non-fatal error in the script (`find: command not found`, a known quirk in the `wazuh-certs-generator:0.0.4` image) — didn't stop the cert generation, verified all 10 expected cert files landed on disk (`ls -la config/wazuh_indexer_ssl_certs/`).
+
+**Brought up the full stack** via `docker compose up -d` — all three images (`wazuh-indexer`, `wazuh-dashboard`, `wazuh-manager`, all `4.14.6`) pulled cleanly, 14 volumes created, all three containers started with no errors.
+
+**Verified health beyond "container started":**
+- Indexer: `curl -k -u admin:SecretPassword https://localhost:9200` returned a valid cluster identity (`wazuh-cluster`), confirming it was genuinely responding, not just running.
+- Manager: `docker logs single-node-wazuh.manager-1 --tail 30` showed a clean connection to the indexer, alert templates loaded, ~15 index-connector streams initialized, vulnerability scanner started — no errors, no restart loop.
+
+**Logged into the dashboard** (`https://10.10.20.100/`) via Claude in Chrome in point-and-describe mode — Claude navigated/screenshotted, Michael typed credentials and clicked. Default credentials (`admin` / `SecretPassword`) worked on the first try and landed directly on the Overview dashboard (0 agents registered, as expected — no agents deployed yet). Alerts already showing (45 medium, 141 low severity) with zero agents connected — these are Wazuh's own internal self-monitoring alerts (API activity, indexer health), not real detections.
+
+**Password change attempt failed as expected, for a real reason.** The dashboard's own "Reset password" dialog returned `Failed to reset password. {"status":"FORBIDDEN","message":"Resource 'admin' is reserved."}`. Looked this up against current Wazuh docs rather than guessing: the `admin` indexer user is flagged `reserved: true` specifically to prevent password changes through the UI/API — the real password lives as a hash in `config/wazuh_indexer/internal_users.yml`, and `docker-compose.yml` carries a matching plaintext copy for the manager/dashboard containers to authenticate with. Changing one without the other breaks inter-container auth.
+
+Confirmed the correct multi-step procedure from current docs (not yet executed — scoped out for next session):
+1. Log out of the dashboard (persistent session cookies cause errors otherwise)
+2. `docker compose down`
+3. Generate a password hash via the indexer image's own tool: `docker run --rm -ti wazuh/wazuh-indexer:4.14.6 bash /usr/share/wazuh-indexer/plugins/opensearch-security/tools/hash.sh` (matched to our deployed `4.14.6` tag, not the doc example's `4.14.7`, to avoid any tool/runtime version mismatch)
+4. Edit `config/wazuh_indexer/internal_users.yml` — replace `admin`'s hash
+5. Edit `docker-compose.yml` — replace `INDEXER_PASSWORD` in both the `wazuh.manager` and `wazuh.dashboard` service blocks
+6. `docker compose up -d`
+7. `docker exec -it single-node-wazuh.indexer-1 bash`, then run `securityadmin.sh` inside the container to push the updated security config live
+8. Log into the dashboard with the new password to confirm
+
+Session ended here — logged out of the dashboard as step 1, remaining steps deferred to next session. Standard nightly shutdown followed (`docker compose down` on wazuh-host, VM shutdowns, pve01 shutdown, switch power-off).
+
+### Outcome
+- **Wazuh 4.14.6 deployed and confirmed healthy**: manager, indexer, and dashboard all running, verified via direct API/log checks rather than `docker compose ps` status alone.
+- **Dashboard reachable and logging in successfully** from MGMT10 at `https://10.10.20.100/` — no new pfSense rule needed, MGMT10's default allow-all covered it.
+- **Still on default credentials** (`admin` / `SecretPassword`) — real security gap, flagged, not yet closed. Next session picks up exactly here: log out (done), then `docker compose down` → hash → edit `internal_users.yml` → edit `docker-compose.yml` → `docker compose up -d` → `securityadmin.sh`.
+- **Phase B Step 5 is functionally deployed but not complete** until the password change lands. Steps 6–9 (move Win11-LTSC-victim and Kali to Range VLAN, install Sysmon + Wazuh agent, re-test isolation, acceptance check) remain after that.
+
+### Lessons
+1. **Wazuh's `admin` indexer user can't have its password changed through the dashboard UI or API** — it's deliberately `reserved: true`. The only correct path is editing `internal_users.yml`'s hash directly and keeping `docker-compose.yml`'s plaintext copy in sync, then re-applying via `securityadmin.sh`. A UI "Forbidden" error here doesn't mean something's broken — it means you're on the wrong tool for this specific account.
+2. **The certs-generator image (`wazuh-certs-generator:0.0.4`) throws a harmless `find: command not found`** during a permissions-cleanup step — cosmetic, doesn't stop cert generation, confirmed by checking the actual files on disk rather than trusting the log text alone.
+3. **`docker compose ps` showing `Up` doesn't confirm a service is actually working** — worth a direct check (curl the indexer's own API, tail the manager's logs) before assuming a multi-container stack is genuinely healthy, not just running.
+4. **Password/credential changes on multi-container stacks with shared secrets need every reference updated in lockstep** — the indexer's hash, and every other container's plaintext copy of the same password, or authentication between components breaks. Same "verify every field, not just that a command succeeded" discipline as the pfSense trunk-VLAN gotcha from Phase A.
+5. **Claude in Chrome's own tab group is separate from your regular browsing tabs** — it can only see/control tabs it creates itself, not an existing tab you already have open elsewhere. Worth remembering for future GUI-driven steps: expect a fresh tab, not reuse of one you're already looking at.
