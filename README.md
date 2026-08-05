@@ -58,13 +58,13 @@ Home Router (192.168.0.1)
 | VLAN | Purpose | Access |
 |---|---|---|
 | **MGMT10** | Management PC | Full access to all VLANs for admin (Proxmox, Wazuh, Shuffle, n8n, pfSense, iDRAC) |
-| **INFRA20** | Docker/Wazuh host, `pve-ai` | Receives Range logs on Wazuh's port; scoped outbound internet (DNS/HTTP/HTTPS/ICMP) |
-| **RANGE30** | Kali, Win11 victim | Default-deny; single explicit allow to Infra's Wazuh ingest port only |
+| **INFRA20** | Docker/Wazuh host, `pve-ai` | Receives Range logs on Wazuh's port; scoped outbound internet (DNS/HTTP/HTTPS/ICMP/SSH) |
+| **RANGE30** | Kali (still on flat network, not yet moved), Win11 victim (moved, isolation proven live) | Default-deny; explicit allows to Infra's Wazuh ports only (1514 ingest, 1515 enrollment) |
 
 ## Stack
 
 - **Firewall/Routing:** pfSense CE 2.8.1
-- **Detection:** Wazuh (host-based) + Suricata (network-based, via SPAN)
+- **Detection:** Wazuh 4.14.6 (host-based, deployed via Docker Compose) + Suricata (network-based, via SPAN — not yet deployed)
 - **SOAR:** Shuffle — SOC incident response automation
 - **AI orchestration:** n8n — local-vs-cloud routing (`triage-router-01`),
   general automation
@@ -80,8 +80,8 @@ Home Router (192.168.0.1)
 |---|---|---|
 | A — Network Rebuild | ✅ Complete | VLANs, trunk, mgmt access port, pfSense VM + interfaces. Snapshot `pfsense-clean-install`. |
 | A.5 — Isolation Rule | ✅ Complete | Range default-deny + explicit Wazuh-port allow, applied and reviewed. |
-| **B — Docker/Git/Wazuh Substrate** | 🔄 In progress | **Steps 1-4 done:** Ubuntu Server 24.04.4 LTS VM (`wazuh-host`, `10.10.20.100`) built, SSH confirmed; host prepped for Wazuh's indexer; Docker CE + Compose installed; Git configured with a dedicated SSH deploy key, repo cloned to `~/soc-lab`. INFRA20 now has 5 outbound rules (DNS/HTTP/HTTPS/ICMP/SSH), each added and live-tested as real work hit each gap. **Step 5 next:** deploying Wazuh via Compose. |
-| C — Detection Engineering | ⏳ Not started | Atomic Red Team + custom Wazuh rules |
+| **B — Docker/Git/Wazuh Substrate** | ✅ Complete | Ubuntu Server 24.04.4 LTS VM (`wazuh-host`, `10.10.20.100`) built; Docker CE + Compose installed; Git configured with a dedicated SSH deploy key. **Wazuh 4.14.6 deployed via Docker Compose** (manager + indexer + dashboard, single-node), default credentials changed. INFRA20 has 5 outbound rules (DNS/HTTP/HTTPS/ICMP/SSH); RANGE30 has 3 rules (Wazuh enrollment 1515, Wazuh ingest 1514, default deny) — each added and live-tested as real work hit each gap. **Win11-LTSC-Victim moved to Range VLAN, isolation proven live** (no internet, no home network, Wazuh port only), instrumented with Sysmon (SwiftOnSecurity config) and the Wazuh agent — first real endpoint enrolled and reporting active. |
+| C — Detection Engineering | ⏳ Not started | Atomic Red Team + custom Wazuh rules — will reuse Phase B's ISO-staging pattern for getting tools onto the isolated Range VM |
 | C.5 — Network Visibility | ⏳ Not started | SPAN + Suricata |
 | D — AI Triage Layer | ⏳ Not started | Governed Wazuh triage agent (`wazuh-triage-01`) |
 | E — Local AI + n8n Routing | ⏳ Not started | Integrates with the separate `ai-node` project |
