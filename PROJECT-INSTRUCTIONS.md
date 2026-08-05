@@ -10,7 +10,7 @@ I'm building a home Security Operations Center lab, in order to move from Techno
 
 Claude has **no access to my terminal, screen, or lab**. What I paste is all Claude gets. Claude should never assume state — it should ask, or have me check.
 
-- **Claude in Chrome CAN see** browser tabs: Proxmox web UI, pfSense, Wazuh, Shuffle, n8n, Open WebUI dashboards. Useful for "where is that button."
+- **Claude in Chrome CAN see** browser tabs: Proxmox web UI, pfSense, Wazuh, Shuffle, n8n, Open WebUI dashboards. Useful for "where is that button." Note: it can only see/control tabs it opens itself in its own tab group — not an existing tab I already have open elsewhere. Expect a fresh tab, not reuse.
 - **Claude in Chrome CANNOT see** PuTTY, BIOS, iDRAC console, or VM consoles. Those are copy-paste only.
 
 ## How a session runs
@@ -32,10 +32,11 @@ I never batch steps. If output doesn't match expectations, I **stop** — don't 
 - **Control machine:** Windows PC, PowerShell 7 (non-admin window for Git/Claude Code). PuTTY over USB-serial for the switch.
 - **`pve01`** — Dell PowerEdge R710, Proxmox VE, 64GB RAM, 4 NICs. Management `192.168.0.201` via `vmbr1`/NIC1. **iDRAC `192.168.0.100`.** **This is the always-on service host** — pfSense, Wazuh, Suricata, Shuffle, n8n, Open WebUI, and the Range VMs all live here.
 - **NIC map:** NIC1 `vmbr1` mgmt (gateway `192.168.0.1`) · NIC2 `vmbr2` pfSense WAN · NIC3 `vmbr3` pfSense LAN trunk (VLAN-aware, VLANs 10/20/30) · NIC4 spare / SPAN fallback.
-- **VMs on `pve01`:** Kali (attack), Win11-LTSC-victim (target), ubuntu-soc-host/wazuh-host (Docker/Wazuh substrate, Phase B). Kali and Win11-LTSC-victim currently on `vmbr1`, **not yet isolated**.
+- **VMs on `pve01`:** Kali (attack, still on `vmbr1`, **not yet isolated** — Kali's move isn't actually in Phase B's scope, worth confirming against `LAB-BLUEPRINT.md` before Phase C assumes its placement), Win11-LTSC-victim (target — **moved to RANGE30 on 2026-08-04**, `10.10.30.100`, isolation proven live), `wazuh-host`/`ubuntu-soc-host` (Docker/Wazuh substrate, Phase B).
 - **`pve-ai`** — i9-10900KF + RTX 3070. Proxmox host `192.168.0.202`; `ai-vm` (Ubuntu Server) `192.168.0.203`. **Role: local GPU inference only (Ollama).** Only box that can do GPU inference — R710 has no usable GPU. **Separate project** — see below.
 - **Cisco Catalyst switch** — WS-C2960X-48FPS-L, IOS 15.2(7)E9. Factory reset, VLANs 10/20/30, `Gi1/0/3` trunk, `Gi1/0/48` mgmt access. Console: PuTTY, COM14, 9600/8/1/None/None. `Gi1/0/49`–`50` are hardware-faulty (err-disabled after factory erase) — avoid.
-- **pfSense** — CE 2.8.1 (VM 102 on `pve01`). Three VLAN interfaces: `10.10.10.1/24` (MGMT10), `10.10.20.1/24` (INFRA20), `10.10.30.1/24` (RANGE30), DHCP enabled. GUI `https://10.10.10.1/`. **Phase A complete** — snapshot `pfsense-clean-install`. RANGE30 has explicit Pass/Block rules (Phase A.5). INFRA20 has 5 explicit outbound Pass rules: DNS (53), HTTP (80), HTTPS (443), ICMP (any), SSH (22) — each new port/protocol needs its own explicit rule, since OPT interfaces get zero rules by default.
+- **pfSense** — CE 2.8.1 (VM 102 on `pve01`). Three VLAN interfaces: `10.10.10.1/24` (MGMT10), `10.10.20.1/24` (INFRA20), `10.10.30.1/24` (RANGE30), DHCP enabled. GUI `https://10.10.10.1/`. **Phase A complete** — snapshot `pfsense-clean-install`. RANGE30 has 3 rules: Pass (1515, Wazuh enrollment), Pass (1514, Wazuh ingest), Block (default deny) — isolation proven live against a real VM on 2026-08-04. INFRA20 has 5 explicit outbound Pass rules: DNS (53), HTTP (80), HTTPS (443), ICMP (any), SSH (22) — each new port/protocol needs its own explicit rule, since OPT/segment interfaces get zero rules by default.
+- **`wazuh-host`** (`10.10.20.100`, VM 103, Infra VLAN) — Ubuntu Server 24.04.4 LTS. Docker CE + Compose installed. **Wazuh 4.14.6 deployed via Docker Compose** (single-node: manager + indexer + dashboard), source at `~/wazuh-docker` (a separate, local-only clone of the upstream `wazuh/wazuh-docker` repo — deliberately not tracked in the `SOC-LAB` project repo). Dashboard reachable at `https://10.10.20.100/`. **Default admin credentials have been changed** — the password itself is intentionally excluded from all project documentation and chat; stored in Keeper only. My own project repo is separately cloned here too, at `~/soc-lab`, via a repo-scoped SSH deploy key (read/write). **First agent enrolled 2026-08-04**: `win11-ltsc-victim` (agent ID `001`, `10.10.30.100`), status active, Sysmon (SwiftOnSecurity config) feeding it. **Phase B complete.**
 - **Network today** — flat outside the VLANs I've built. Home router `192.168.0.1` does DHCP/routing for everything else.
 - **QNAP TS-869 Pro** — NOT lab storage. One future exception: may host a Proxmox **QDevice** in Container Station once clustering happens (see below). Otherwise don't configure/mount/depend on it.
 
@@ -62,6 +63,7 @@ Cluster `pve01` + `pve-ai` for a single Proxmox pane. Overhead negligible; the r
 - **PowerShell:** `Start-Transcript -Path "C:\Users\micha\SOC-Lab\Logs\session-$(Get-Date -Format 'yyyy-MM-dd-HHmm').txt"` (run this *before* SSHing anywhere — it's a PowerShell-only command, useless once inside a Linux shell) / `Stop-Transcript`.
 - **Linux hosts:** `script ~/session.log` (`-a` append), `exit` to stop.
 - **`build_log.md`** — append-only narrative: every command, its **actual** output, decisions, and every rollback point. Never reconstructed after the fact. Don't rewrite history in it.
+- **Credential exception:** actual plaintext passwords/secrets typed during a session live in the raw transcript (unavoidable), but must **never** be copied into `build_log.md`, `PROJECT-INSTRUCTIONS.md`, or any other tracked/committed file, and Claude should not repeat them back in chat once set.
 
 ## SSH quirk (learned the hard way)
 
@@ -82,8 +84,11 @@ Windows OpenSSH 9.5p2 vs Proxmox 9 mismatch. `.ssh/config` needs correct `icacls
 - One network change at a time, tested before the next.
 - Confirm console/recovery access before any change that could lock out management.
 - Explain-it-back checkpoints after each phase.
-- Verify version- and model-specific syntax against the live system — package names, release tags, switch interface naming, IOS command availability, Wazuh/Shuffle tags. Never from memory.
+- Verify version- and model-specific syntax against the live system — package names, release tags, switch interface naming, IOS command availability, Wazuh/Shuffle tags, **container-internal file paths (don't trust generic vendor doc examples — confirm with `find` inside the actual container)**. Never from memory.
 - pfSense firewall rule descriptions follow the format `allow <INTERFACE_NAME> -> <PURPOSE> (<PORT>)`, e.g. `allow INFRA20 -> HTTPS (443)` — use the interface's friendly name (MGMT10/INFRA20/RANGE30), not a lowercase/generic label.
+- When a step could be done via the Claude in Chrome extension (e.g. clicking through a GUI like pfSense or the Wazuh dashboard), always ask whether I want the extension to run it or want to do it myself — never assume one or the other.
+- Always explain what a command does (and why) before I run it, not just give the command — applies to every command, not just complex or risky ones.
+- **Never write actual passwords/secrets into any documentation file, and don't repeat them back in chat once set.**
 
 ## Known gotchas — already hit in this environment
 
@@ -98,6 +103,14 @@ Windows OpenSSH 9.5p2 vs Proxmox 9 mismatch. `.ssh/config` needs correct `icacls
 9. **DNS-only failures vs. hang-after-partial-success are different symptoms.** The first usually means no rules exist at all; the second (small transfers work, larger ones hang) usually means ICMP/Path MTU Discovery is blocked, not DNS or the main port.
 10. **A live OS installer's root filesystem may still be the mounted ISO, even late in the install.** Don't eject virtual media until the installer's own "Reboot Now" (or equivalent) prompt actually appears.
 11. **`sudo command >> file` fails on root-owned files** even though `command` is elevated — the shell sets up the redirect using my own permissions *before* `sudo` runs. Use `echo "..." | sudo tee -a file` instead, since `tee` itself gets elevated.
+12. **Wazuh's `admin` indexer user can't have its password changed through the dashboard UI or API** — it's `reserved: true`. Must edit `internal_users.yml`'s hash directly (matching plaintext in `docker-compose.yml`'s `INDEXER_PASSWORD`), then apply via `securityadmin.sh` inside the indexer container.
+13. **Generic `wazuh-docker` doc paths for certs/config didn't match this container's real layout.** Real paths on this deployment: certs at `/usr/share/wazuh-indexer/config/certs/`, security config at `/usr/share/wazuh-indexer/config/opensearch-security/`. Use `find / -iname "<file>" 2>/dev/null` inside the container to confirm rather than trusting doc examples.
+14. **`securityadmin.sh` suppresses its own real error output** (`2>/dev/null` baked into the script) — a silent return to prompt after the `JAVA_HOME` warning is not evidence of success or failure either way. If this happens, reconstruct and run the underlying `java org.opensearch.security.tools.SecurityAdmin ...` invocation directly (without the suppression) to see what's actually happening.
+15. **This container image bundles its own JDK but doesn't set `JAVA_HOME`/`$PATH` to it.** Real binary: `/usr/share/wazuh-indexer/jdk/bin/java`. Call by full path if a script's Java auto-detection comes up empty.
+16. **A Windows Wazuh agent's first-time enrollment needs a separate firewall allow for port 1515**, distinct from the ongoing data-traffic port (1514). Same "segment gets zero rules by default" pattern as INFRA20 — check both ports when standing up any new agent on an isolated VLAN.
+17. **A Range VM has no internet by design — tools must be staged via virtual media, not downloaded in-VM.** Working pattern: download on the management PC → build an ISO → upload to Proxmox's `local` storage → attach as the VM's CD/DVD drive. Will recur for Phase C (Atomic Red Team).
+18. **`IStream.Read()` cannot be called directly from PowerShell, in any version (5.1 or 7)** — a fundamental COM interop limitation, not a PS-version issue. Building an ISO from PowerShell requires a small C# helper class compiled via `Add-Type -CompilerParameters @{CompilerOptions='/unsafe'}` to marshal the read correctly.
+19. **Selecting a local file for upload (e.g., into Proxmox's ISO Images) requires the OS's native file picker**, which sits outside anything a browser automation tool can see or interact with — this step always needs to be done by hand.
 
 ## Related, separate project — do not duplicate
 
@@ -123,6 +136,6 @@ The `.docx` workbooks that used to accompany this build have been retired (2026-
 
 ## Repo layout note
 
-The repo root is `C:\Users\micha\SOC-Lab\Build-Transcripts\` (renamed from `Updated 7-16-2026` on 2026-08-03 — confirmed via `git remote -v` that this folder, not its parent, is where `.git` actually lives). `wazuh-host` also has its own clone at `~/soc-lab`, authenticated via a repo-scoped SSH deploy key (read/write), separate from `pve01`'s SSH key.
+The repo root is `C:\Users\micha\SOC-Lab\Build-Transcripts\` (renamed from `Updated 7-16-2026` on 2026-08-03 — confirmed via `git remote -v` that this folder, not its parent, is where `.git` actually lives). `wazuh-host` also has its own clone at `~/soc-lab`, authenticated via a repo-scoped SSH deploy key (read/write), separate from `pve01`'s SSH key. `wazuh-host` additionally has a second, **local-only, untracked** clone at `~/wazuh-docker` (upstream `wazuh/wazuh-docker`, pinned to tag `v4.14.6`) — this is third-party deployment tooling, not part of the `SOC-LAB` repo, and should stay that way.
 
 Keep this file short and current. Update it whenever a rule, gotcha, or environment fact changes.

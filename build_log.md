@@ -708,3 +708,112 @@ Session ended here — logged out of the dashboard as step 1, remaining steps de
 3. **`docker compose ps` showing `Up` doesn't confirm a service is actually working** — worth a direct check (curl the indexer's own API, tail the manager's logs) before assuming a multi-container stack is genuinely healthy, not just running.
 4. **Password/credential changes on multi-container stacks with shared secrets need every reference updated in lockstep** — the indexer's hash, and every other container's plaintext copy of the same password, or authentication between components breaks. Same "verify every field, not just that a command succeeded" discipline as the pfSense trunk-VLAN gotcha from Phase A.
 5. **Claude in Chrome's own tab group is separate from your regular browsing tabs** — it can only see/control tabs it creates itself, not an existing tab you already have open elsewhere. Worth remembering for future GUI-driven steps: expect a fresh tab, not reuse of one you're already looking at.
+
+## 2026-08-04 — Wazuh admin password change completed; securityadmin.sh path/JAVA_HOME troubleshooting (Phase B Step 5 complete)
+
+**Phase:**       B (Step 5, closeout)
+**Goal:**        Finish the deferred Wazuh admin password change from the prior session — apply `securityadmin.sh` to push the updated `internal_users.yml` hash into the running indexer security config, confirm login with the new credentials.
+**Rollback:**    Not needed — continuation of the prior session's in-progress change. Docker Compose stack briefly recreated (`docker compose up -d`) with updated environment variables, not stopped in a data-losing way.
+**Transcript:**  session log today — SSH on `wazuh-host` + an interactive `docker exec` shell inside the indexer container
+
+### What happened
+
+Confirmed containers were stopped from the prior night's clean shutdown (`docker compose ps` returned an empty table).
+
+**Generated the bcrypt hash** for the new admin password via `docker run --rm -ti wazuh/wazuh-indexer:4.14.6 bash /usr/share/wazuh-indexer/plugins/opensearch-security/tools/hash.sh`.
+
+**Edited `config/wazuh_indexer/internal_users.yml`** — viewed the file first to confirm exact structure, then edited only the `admin` block's `hash` field via `nano`, verified via `cat` that no other fields or users were disturbed.
+
+**Edited `docker-compose.yml`** — checked via `grep -n "SecretPassword\|INDEXER_PASSWORD"` first, found exactly 2 occurrences (`wazuh.manager` block, `wazuh.dashboard` block). Edited both via `nano` to the new plaintext password, verified via `grep` afterward that both changed and no `SecretPassword` remained.
+
+**Brought the stack back up** (`docker compose up -d`) — fast since images were already cached locally, all three containers started clean.
+
+**`securityadmin.sh` troubleshooting — several rounds, root-caused properly rather than guessed around:**
+1. First attempt ran the tool's bare filename directly on `wazuh-host`'s own shell instead of inside the container — `command not found`, corrected to a full `docker exec` invocation.
+2. Second attempt (correctly inside the container) printed only a `JAVA_HOME`/`OPENSEARCH_JAVA_HOME` warning and returned silently to prompt — no success or failure message. Opened an interactive shell into the indexer container (`docker exec -it ... bash`) to investigate directly instead of continuing to guess flags from outside.
+3. The generic cert path from `wazuh-docker`'s own documentation (`/usr/share/wazuh-indexer/certs/`) didn't exist. `find / -iname "*.pem" 2>/dev/null` located the real path: **`/usr/share/wazuh-indexer/config/certs/`** (`admin.pem`, `admin-key.pem`, `root-ca.pem`, `indexer.pem`, `indexer-key.pem`).
+4. The documented config directory (`/usr/share/wazuh-indexer/opensearch-security/`) didn't exist either. `find / -iname "internal_users.yml" 2>/dev/null` located the real path: **`/usr/share/wazuh-indexer/config/opensearch-security/`**. Confirmed via `grep` on this file that it correctly reflected the host-edited hash — the volume mount was working fine; only the assumed paths were wrong.
+5. Re-ran `securityadmin.sh` with the corrected paths and the **admin** cert (not the indexer's own service cert, since this is an administrative action, not a service-to-service connection) — still returned silently after the Java warning, no other output.
+6. Read the script itself (`cat -n securityadmin.sh`) and found the real cause: its final line pipes the actual Java invocation through `2>/dev/null`, silently discarding any real error. The `JAVA_HOME` warning was the *only* thing this script was ever going to show, success or failure.
+7. Manually reconstructed and ran the same Java invocation the script builds internally, without the `2>/dev/null` suppression — got a clean `java: command not found`, revealing that Java genuinely isn't on `$PATH` inside this container image.
+8. `find / -iname "java" -type f 2>/dev/null` located the real binary: **`/usr/share/wazuh-indexer/jdk/bin/java`** — the image ships its own bundled JDK (expected for an OpenSearch-based container); the script's `JAVA_HOME`/`OPENSEARCH_JAVA_HOME` auto-detect just isn't populated in this image.
+9. Ran the full `SecurityAdmin` invocation directly against that Java binary, with the correct config/cert paths — completed successfully: connected to the cluster (`GREEN`, `wazuh-cluster`, 1 node), all 10 config types updated including `internalusers`, ending in `Done with success`.
+
+**Logged into the dashboard with the new password** — confirmed working end to end.
+
+### Outcome
+- **Phase B Step 5 is now fully complete.** Wazuh manager, indexer, and dashboard all deployed, verified healthy, and no longer on default credentials.
+- **A real, version-specific procedure is now documented**, since the generic `wazuh-docker` doc examples didn't match this container's actual layout:
+  - Real cert path: `/usr/share/wazuh-indexer/config/certs/`
+  - Real security config path: `/usr/share/wazuh-indexer/config/opensearch-security/`
+  - Real Java binary: `/usr/share/wazuh-indexer/jdk/bin/java` (not on `$PATH` — call by full path, or `export JAVA_HOME=/usr/share/wazuh-indexer/jdk` first)
+  - `securityadmin.sh`'s own output is suppressed (`2>/dev/null` baked into the script) — a silent return to prompt is not evidence of success *or* failure; reconstruct and run the underlying `java` command directly to see the real result.
+- **Phase B Step 6 is next**: move Win11-LTSC-victim to Range VLAN, install Sysmon + Wazuh agent. Not started — VM's current power state not yet confirmed before the session ended.
+
+### Lessons
+1. **Generic vendor documentation's example file paths may not match the actual layout inside a specific image/version.** Verify with `find` rather than trusting docs literally — same discipline used everywhere else in this build (switch IOS syntax, package names, etc.), now extended to container-internal paths.
+2. **A shell script silently returning to prompt with no success/failure message is not evidence of success.** Check the script's own source for output suppression (`2>/dev/null`, redirected logging) before assuming a step completed — or failed.
+3. **Container images that bundle their own JDK don't always populate `JAVA_HOME`/`$PATH` to point at it.** If a script relies on `which java` or `$PATH` and that's unset, call the bundled binary by its full, discovered path instead of assuming Java is missing entirely.
+4. **The correct cert/key for an administrative security action (`securityadmin.sh`) is the dedicated admin cert** (`admin.pem`/`admin-key.pem`), not a service's own operational cert (e.g., the indexer's TLS cert) — the same least-privilege-of-purpose principle used elsewhere in this build, applied to certificate roles rather than user accounts.
+
+## 2026-08-04 — Win11-LTSC-Victim moved to Range VLAN, isolation proven live, Sysmon + Wazuh agent deployed (Phase B Step 6 complete — Phase B done)
+
+**Phase:**       B (Step 6, closeout)
+**Goal:**        Move Win11-LTSC-Victim onto RANGE30, prove the Phase A.5 isolation rule against a real VM for the first time, then instrument it with Sysmon and the Wazuh agent so it reports to the manager.
+**Rollback:**    No Proxmox snapshot for the VLAN move (VM was off; Hardware tab edit is trivially reversible). pfSense config exported before the new 1515 rule, per standing practice, though this was a purely additive change with no risk to MGMT10.
+**Transcript:**  session logs today — Proxmox web UI via Claude in Chrome, PowerShell 7 and Windows PowerShell on the management PC, PowerShell on Win11-LTSC-Victim's own console
+
+### What happened
+
+**VLAN move.** Confirmed Win11-LTSC-Victim (VM 101) was powered off. Via Proxmox's Hardware tab (Claude in Chrome, point-and-describe — Michael clicked, Claude confirmed each field via screenshot before commit), changed `net0` from `bridge=vmbr1` (flat, untagged) to `bridge=vmbr3,tag=30` (Range VLAN). MAC address (`BC:24:11:5B:13:31`) and NIC model left untouched — confirmed via the Hardware tab listing before and after.
+
+**Isolation proven live — the real Phase A.5 acceptance check, finally run.** Booted the VM. `ipconfig` showed a clean DHCP lease on the Range subnet: `10.10.30.100/24`, gateway `10.10.30.1` — confirms pfSense's RANGE30 DHCP scope working correctly. From inside the VM:
+- `ping 8.8.8.8` → 100% loss (no internet) ✅ expected
+- `ping 192.168.0.1` → 100% loss (no home network) ✅ expected
+- `Test-NetConnection -ComputerName 10.10.20.100 -Port 1514` → `TcpTestSucceeded: True` ✅ expected (Wazuh ingest port specifically allowed; plain ICMP to the same host would have failed since the rule is TCP/1514-only, which is why `Test-NetConnection` was used instead of `ping` for this one)
+
+This closes the caveat that's been sitting in the log since 2026-07-30 — the isolation rule was correctly configured but never actually tested against a live VM until tonight.
+
+**Staging tools onto an intentionally internet-less VM.** Since RANGE30 has zero outbound internet by design, Sysmon, the SwiftOnSecurity config, and the Wazuh agent MSI all had to be downloaded on the **management PC** (which has internet via MGMT10's default allow) and transferred in via virtual media rather than a direct download inside the VM — the general pattern for any airgapped/isolated system, and one that will likely recur in Phase C for Atomic Red Team.
+
+- Confirmed current versions live rather than from memory: Sysmon **v15.20/15.21** (Microsoft's Sysinternals page, updated mid-June 2026), Wazuh agent pinned to **4.14.6** specifically — matching the manager's version exactly, since a search turned up an explicit compatibility note that agent version must be ≤ manager version, and generic doc examples showing `4.14.7` would have been *higher* than our manager.
+- Downloaded all three (`Sysmon.zip`, `sysmonconfig-export.xml`, `wazuh-agent-4.14.6-1.msi`) to `C:\Users\micha\SOC-Lab\Staging` via `Invoke-WebRequest`. First attempt was accidentally run in **cmd.exe**, not PowerShell (`Invoke-WebRequest` doesn't exist there) — caught by checking the prompt string (`C:\...>` vs `PS C:\...>`), corrected by opening real PowerShell 7.
+- **Built an ISO from the staging folder to attach as virtual media** — this took several failed attempts before landing on a working approach:
+  1. First script used `$stream.Read()` directly on the COM `ImageStream` object — failed with "does not contain a method named 'Read'" in PowerShell 7.
+  2. Suspected a PS7-vs-PS5.1 COM interop difference; switched to Windows PowerShell 5.1 — **same error**, ruling that theory out.
+  3. Root cause (confirmed via web search): this is a **long-standing, version-independent limitation** — `IStream` (what `ImageStream` returns) is a low-level COM interface with no "dispatch" layer, so PowerShell fundamentally cannot call `.Read()` on it directly, in any version. The standard, widely-documented fix is a small inline C# helper class, compiled at runtime via `Add-Type` with `/unsafe`, that does the raw marshaling correctly.
+  4. Used that pattern (`ISOFile::Create`) — worked immediately, no further errors. ISO built at `C:\Users\micha\SOC-Lab\Staging\soclab-tools.iso`, ~9.7MB, verified via `Get-ChildItem`.
+- Uploaded the ISO to Proxmox's `local` storage (System > Node > local > ISO Images > Upload) — this specific step had to be done by Michael directly, since selecting a local file requires the OS's native file picker, which sits outside anything the browser extension can see or interact with even in principle.
+- Attached the ISO to VM 101's `ide0` CD/DVD drive (Storage: `local`, ISO image: `soclab-tools.iso`) via the Hardware tab — confirmed via the resulting device string: `local:iso/soclab-tools.iso,media=cdrom,size=9920K`.
+- Confirmed inside the VM: all three files visible on the new CD drive, landed at **`E:`** (not the assumed `D:` — checked live via `Get-Volume` rather than guessing a second time).
+
+**Sysmon installed.** Copied files from `E:\` to `C:\SOC-Tools`, extracted `Sysmon.zip`. Installed with `Sysmon64.exe -accepteula -i C:\SOC-Tools\sysmonconfig-export.xml` in an **elevated** PowerShell window (required for the driver install) — clean install, schema validated (config schema 4.50 against Sysmon's own 4.91, handled correctly), driver and service both installed and started with no errors. Verified real events flowing via `Get-WinEvent` — DNS queries (ID 22), process creation with full hash/parent-chain detail (ID 1), even a `CreateRemoteThread` event (ID 8) from normal DWM background activity — confirming SwiftOnSecurity's config is actually capturing the intended depth of telemetry, not just that the service reports "running."
+
+**Wazuh agent installed, hit a real gap, fixed it.** Installed via `msiexec.exe /i wazuh-agent-4.14.6-1.msi /q WAZUH_MANAGER="10.10.20.100" WAZUH_AGENT_NAME="win11-ltsc-victim"` — silent install returned cleanly but the `WazuhSvc` service was `Stopped`, not auto-started. Started it manually; log showed a repeating cycle: `Requesting a key from server` → `ERROR: Unable to connect to enrollment service at '[10.10.20.100]:1515'`. `client.keys` was empty, confirming enrollment never completed.
+
+**Root cause: the same "OPT/segment interfaces get zero rules by default" pattern that hit INFRA20 three times during Phase B Steps 1 and 4 — this time on RANGE30.** The existing Phase A.5 rule only covers port 1514 (ongoing agent-to-manager data traffic); a Windows agent's *first-time enrollment* handshake needs a separate one-time connection to port **1515** (the enrollment service), which RANGE30 had no rule for at all.
+
+Wrote and applied a new pfSense rule on RANGE30 (Michael wrote the final rule per the two-tier standing rule, reviewed against a Claude-drafted reference first): **Pass, RANGE30 subnets → INFRA20 subnets, TCP, port 1515, description `allow RANGE30 -> Wazuh enrollment (1515)`** — placed above the existing rules, no reordering needed since order between two Pass rules above a single Block doesn't matter. Applied cleanly (`The changes have been applied successfully`), confirmed via screenshot showing all three rules (1515 Pass, 1514 Pass, default Block) in the list.
+
+**One process note:** several browser tabs controlled by Claude in Chrome closed unexpectedly mid-session tonight for unclear reasons, disrupting the point-and-describe workflow a few times. When it kept happening around this specific rule, switched to Michael building the rule directly in pfSense's GUI himself and sending a screenshot for Claude to verify field-by-field afterward — worked cleanly and is a reasonable fallback pattern if the extension misbehaves again.
+
+**Retried enrollment** — `Restart-Service WazuhSvc`, waited 15 seconds, checked `client.keys`: now populated with **agent ID `001`, name `win11-ltsc-victim`, and a real registration key**. Log confirmed `Connected to the server ([10.10.20.100]:1514/tcp)` and `Agent is now online`.
+
+**Confirmed in the Wazuh dashboard directly** (Michael checked himself, since this required his new password, which Claude does not have and should never be asked to enter): agent `001`, name `win11-ltsc-victim`, IP `10.10.30.100`, OS correctly identified as Windows 11 Enterprise LTSC 2024, status **active**, agent version `4.14.6` matching the manager exactly, group `default`.
+
+### Outcome
+- **Phase B Step 6 is complete.** Win11-LTSC-Victim is on RANGE30, isolation is proven live (not just configured), Sysmon is capturing detailed telemetry with the SwiftOnSecurity ruleset, and the Wazuh agent is enrolled, connected, and reporting.
+- **Phase B is now fully complete** — Docker/Git substrate, Wazuh deployed and password-secured, first real endpoint instrumented and confirmed reporting end to end.
+- **RANGE30 now has 3 firewall rules**: Pass (1515, Wazuh enrollment), Pass (1514, Wazuh ingest), Block (default deny, everything else) — same "explicit allow, then deny" shape as INFRA20's rule growth during Phase B.
+- **Reusable technique captured**: the ISO-staging pattern (download on MGMT PC → build ISO via the `IStream`/C# `Add-Type` workaround → upload to Proxmox → attach as virtual CD) is now a proven path for getting tools onto any isolated Range VM — directly relevant to Phase C's Atomic Red Team install, which will hit the exact same "no internet on this VM" constraint.
+- Kali is still on `vmbr1`, not yet moved to Range VLAN — that was never actually in Phase B's scope (only Win11-LTSC-Victim was), worth confirming against `LAB-BLUEPRINT.md` before Phase C assumes Kali's placement.
+- **Phase C (Detection Engineering) is next** — not started tonight.
+
+### Lessons
+1. **A firewall rule can be correctly configured and still not be "proven"** — Phase A.5's isolation rule sat untested against a real VM for five days between being written and actually being validated live. Don't mark an acceptance check complete until it's actually been run against real traffic, not just reasoned about.
+2. **Every new VLAN/segment's "zero rules by default" gap can bite more than once, in different directions.** INFRA20 needed five separate explicit rules discovered one at a time (DNS, HTTP, HTTPS, ICMP, SSH); RANGE30's single Wazuh-ingest rule (1514) wasn't enough either — first-time agent *enrollment* uses a completely different port (1515) than ongoing data traffic. Check both when standing up any new agent-based service on a segmented network.
+3. **`IStream.Read()` cannot be called directly from PowerShell, in any version** — this is a fundamental COM interop limitation (no IDispatch layer), not a PS5.1-vs-PS7 issue. The fix is always a small compiled C# helper via `Add-Type`, not a different PowerShell version.
+4. **Silent `msiexec /q` success doesn't mean the installed service actually started or connected** — check `Get-Service` and the application's own log, not just the installer's exit behavior.
+5. **When picking a package version for a new tool, check compatibility constraints explicitly** (agent ≤ manager, in this case) rather than grabbing whatever a generic doc example shows — a newer-looking version number isn't automatically the right one.
+6. **The Claude in Chrome extension's controlled tabs closing unexpectedly is a real, if intermittent, failure mode** — when point-and-describe workflow breaks down repeatedly, falling back to "user builds it directly, Claude verifies via screenshot afterward" is a reasonable and fast recovery pattern rather than continuing to fight the tooling.
+7. **A password typed during a session lives in that session's raw transcript regardless of care taken afterward** — the fix is discipline about never repeating it back in chat or writing it into any tracked documentation, not pretending it can be scrubbed retroactively. Rotate if full removal from history is ever actually required.
