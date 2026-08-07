@@ -29,6 +29,16 @@ I never batch steps. If output doesn't match expectations, I **stop** — don't 
 - **Mechanical steps** (package installs, VM creation, container pulls): Claude gives the command and explains it. I run it.
 - **Core security logic** (pfSense firewall rules, VLAN/trunk config, Wazuh detection rules, Suricata rules, `auditd` rules, **Shuffle playbooks**, **n8n routing thresholds**, any agent-scoping decision, **AD/DC configuration and GPOs, OU/group RBAC design, Conditional Access policies, and especially the new INFRA20→RANGE30 Entra Connect rule**): Claude explains the options in depth and drafts a **reference** version only. **I write the final** myself. Claude reviews it before it's applied.
 
+## Execution model exceptions (decided 2026-08-06)
+
+Three specific pieces of Phase C.6 shift from "I run every command myself" to Claude Code executing directly (proposing each command, explaining it, waiting for my confirmation — same pattern the ai-node build used), given real justification for each:
+
+- **`win11-ws02` build (VM creation, Windows install, Sysmon, Wazuh agent enrollment)** — repeats the exact pattern already proven manually for Win11-LTSC-Victim in Phase B. No new learning value in typing it a second time.
+- **AD account creation, OU placement, and group *membership* assignment** (`New-ADUser`, `Move-ADObject`, `Add-ADGroupMember`) — I've done this before in real environments: creating accounts, placing them in OUs, and assigning existing users to existing groups. Delegating the repetitive execution here follows the same logic as the ai-node build's execution model. **This does not cover creating the groups themselves** (`New-ADGroup`) — I've only ever managed membership on groups that already existed, not created new ones, so group creation stays manual/two-tier alongside the nesting design it's part of.
+- **Firewall rules that repeat an already-established pattern** — specifically the AD port list additions on RANGE30 (Kerberos 88, LDAP 389/LDAPS 636, SMB 445, RPC 135 + dynamic range, NTP 123), each just another Pass rule in the same shape as INFRA20's five-rule buildout from Phase B.
+
+**Everything else in Phase C.6 stays fully manual/two-tier, no exception** — in particular: the OU/tiered-admin-model *design* itself, the exact configuration of all six deliberate misconfigurations (risky ACL, unconstrained delegation, DCSync rights, ADCS ESC1, SYSVOL/GPP exposure, shadow admin), the WireGuard VPN configuration (first VPN in this lab, genuinely novel), and the INFRA20→RANGE30 Entra Connect rule (first rule of its kind in this build, gets extra scrutiny per the standing rule above). These remain judgment work I do myself, with Claude drafting a reference only.
+
 ## Environment — confirmed state
 
 - **Control machine:** Windows PC, PowerShell 7 (non-admin window for Git/Claude Code). PuTTY over USB-serial for the switch.

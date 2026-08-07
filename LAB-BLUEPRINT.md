@@ -213,15 +213,15 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
    - Stand up `dc01` — Windows Server 2022, Core install, on RANGE30, sized modestly (2 vCPU / 4–8GB).
    - `Install-WindowsFeature AD-Domain-Services`, then `Install-ADDSForest` — new forest and domain, **`soclab.internal`** (not `.local`, to avoid mDNS conflicts; this is the forest root, not a join to an existing one).
    - **Expect a DNS gotcha here** — the single most common AD lab failure point. `dc01`'s own DNS must be authoritative for `soclab.internal`, and every future domain-joined machine must point its DNS at `dc01`, not pfSense or the home router.
-   - Write and apply the AD-specific firewall rule set on RANGE30: DNS (53), Kerberos (88), LDAP (389)/LDAPS (636), SMB (445), RPC endpoint mapper (135) plus a dynamic RPC range (49152–65535), NTP (123). Expect this to grow one rule at a time, same pattern as INFRA20's growth from zero to five rules in Phase B.
-   - Join Win11-LTSC-Victim and the new `win11-ws02` to `soclab.internal`.
+   - Write and apply the AD-specific firewall rule set on RANGE30: DNS (53), Kerberos (88), LDAP (389)/LDAPS (636), SMB (445), RPC endpoint mapper (135) plus a dynamic RPC range (49152–65535), NTP (123). Expect this to grow one rule at a time, same pattern as INFRA20's growth from zero to five rules in Phase B. **These rules are Claude Code-executed** — each one repeats the same shape already established for INFRA20, no new judgment required per rule.
+   - Join Win11-LTSC-Victim and the new `win11-ws02` to `soclab.internal`. **`win11-ws02`'s build (VM creation, Windows install, Sysmon, Wazuh agent enrollment) is Claude Code-executed** — repeats the exact pattern already proven manually for Win11-LTSC-Victim in Phase B.
    - **Configure Advanced Audit Policy via GPO** — Kerberos service ticket operations (4769), directory service access (4662), object access, and related event categories. **This is a technical requirement, not optional realism:** without it, Windows never generates the events the Kerberoasting, DCSync, and lateral-movement detection rules in this phase actually depend on. I write the final GPO, Claude drafts a reference.
 
 3. **Directory structure, users, groups (RBAC):**
-   - Design an OU structure reflecting a tiered admin model — Tier 0 (identity/`dc01`), Tier 1 (servers), Tier 2 (workstations) — even if only partially enforced. I write the final OU/GPO design, Claude drafts a reference.
+   - Design an OU structure reflecting a tiered admin model — Tier 0 (identity/`dc01`), Tier 1 (servers), Tier 2 (workstations) — even if only partially enforced. I write the final OU/GPO design, Claude drafts a reference. **The design decision itself stays manual; only account creation, OU placement, and group *membership* assignment below are delegated — not group creation.**
    - Create 3–4 phantom computer objects (`New-ADComputer`, no live VM behind them) and place them across the OU structure alongside the real hosts, for directory-scale realism and BloodHound mapping.
-   - I create one user account by hand; Claude drafts the reference for scripting the remaining ~12 (varied departments/roles, distributed across OUs).
-   - Create security groups reflecting realistic nested permissions — including at least one deliberate over-privileged nesting (a low-tier group inheriting Domain Admin-adjacent rights through the nesting itself, not direct membership).
+   - I create one user account by hand; **Claude Code executes the creation of the remaining ~12** (varied departments/roles, distributed across OUs) — given prior real-world experience creating AD accounts, assigning groups, and placing objects in OUs.
+   - Create security groups reflecting realistic nested permissions — including at least one deliberate over-privileged nesting (a low-tier group inheriting Domain Admin-adjacent rights through the nesting itself, not direct membership). **Which groups exist, how they nest, and the actual group-creation commands are manual/two-tier** — I've only ever managed membership on already-existing groups, not created new ones, so this stays alongside the nesting design rather than being delegated. **Assigning existing users to the created groups is Claude Code-executed**, matching real prior experience with group membership assignment specifically.
    - Create one service account with an SPN set and a deliberately weak password — the Kerberoasting target.
    - Create one break-glass/emergency admin account — explicitly not touched during the attack chain, called out as such in the writeup.
    - Create two or three stale/inactive "former employee" accounts, left enabled.
@@ -340,18 +340,20 @@ The underlying `pve-ai`/`ai-vm` infrastructure (GPU passthrough, Ubuntu VM, NVID
 
 ## Time estimate — locked scope
 
-| Block | Manual (hrs) |
-|---|---|
-| Phase C | 5–7 |
-| SSH key-only hardening, `wazuh-host` | 0.5–1 |
-| Phase C.6 (infra hardening, VPN, second workstation, full AD build with tiered OUs/groups/GPOs, ADCS, deliberate misconfigurations, file shares, expanded Kali tooling, full kill chain incl. Discovery/BloodHound workflow, LAPS before/after, stitching + writeup) | 44–63 |
-| Phase C.7 (Entra ID Free + Entra Connect + Exchange Online + P1 trial + AADInternals/ROADtools) | 13–21 |
-| Phase D | 5.5–9 |
-| Phase E | 4.5–6.5 |
-| Phase F | 4.5–8.5 |
-| **Total (Phase C through F; Phase A/A.5/B complete; Phase C.5 unaffected by this revision)** | **~77.5–116 hrs** |
+| Block | Manual (hrs) | Automated (Claude Code) |
+|---|---|---|
+| Phase C | 5–7 | — |
+| SSH key-only hardening, `wazuh-host` | 0.5–1 | — |
+| Phase C.6 (infra hardening, VPN, full AD build design + misconfigurations, expanded Kali tooling, full kill chain incl. Discovery/BloodHound workflow, LAPS before/after, stitching + writeup) | 35–48.5 | ~2.5–4.25 |
+| Phase C.7 (Entra ID Free + Entra Connect + Exchange Online + P1 trial + AADInternals/ROADtools) | 13–21 | — |
+| Phase D | 5.5–9 | — |
+| Phase E | 4.5–6.5 | — |
+| Phase F | 4.5–8.5 | — |
+| **Total (Phase C through F; Phase A/A.5/B complete; Phase C.5 unaffected by this revision)** | **~68–102 hrs** | **~2.5–4.25 hrs** |
 
-At ~15–17 hrs/week (baseline pace inferred from `build_log.md`, plus a 5 hr/week weekday addition): **roughly 4.6–7.7 weeks**, realistically **5–8 weeks**.
+**What moved to the Automated column (2026-08-06 revision, corrected):** `win11-ws02`'s build (VM/Windows/Sysmon/Wazuh agent — repeats the proven Phase B pattern, ~2–3 hrs), AD account creation, OU placement, and group *membership* assignment (given prior real-world experience with exactly those tasks, ~1.5–2.5 hrs of mechanical execution, review time only — **not** group creation itself, which stays manual since I've only ever managed membership on existing groups), and the AD port-list firewall rules on RANGE30 (each repeats INFRA20's established rule shape, ~1–1.5 hrs). The OU/tiered-model *design*, group creation, all six deliberate misconfigurations' exact configuration, the WireGuard VPN setup, and the INFRA20→RANGE30 Entra Connect rule remain fully manual — see "Execution model exceptions" in `PROJECT-INSTRUCTIONS.md` for the full reasoning.
+
+At ~15–17 hrs/week (baseline pace inferred from `build_log.md`, plus a 5 hr/week weekday addition): **roughly 4–6.7 weeks**, realistically **4–7 weeks** — down from the pre-delegation estimate (~5–8 weeks), though the automated hours themselves are still a small slice of the total; most of the savings come from removing manual typing time on repetitive, already-proven work, not from cutting judgment work.
 
 ---
 
