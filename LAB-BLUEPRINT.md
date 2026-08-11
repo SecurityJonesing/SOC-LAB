@@ -168,7 +168,7 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 8. ✅ Re-test the isolation rule: victim reaches Wazuh on 1514/1515, still no internet. Confirmed 2026-08-04.
 9. ✅ **Acceptance check:** dashboard shows the victim active with Sysmon events. Confirmed.
 
-**Still open from Phase B:** SSH key-only hardening on `wazuh-host` — not yet done, scheduled alongside Phase C.
+**Phase B follow-up (SSH key-only hardening on `wazuh-host`) is now complete** — see Phase C entry below.
 
 ---
 
@@ -180,7 +180,7 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 5. Commit rules/config-as-code.
 6. **Acceptance check:** a committed rule of my own authorship fires on a re-run.
 
-**Also scheduled in this window:** SSH key-only hardening on `wazuh-host`, using the existing `id_ed25519` — the open Phase B follow-up.
+**Complete (2026-08-11):** SSH key-only hardening on `wazuh-host` — personal key pair generated and installed, `PasswordAuthentication no` set and verified (password auth rejected, key auth succeeds), Claude Code's existing non-interactive key confirmed unaffected. See `build_log.md` for full session detail.
 
 ---
 
