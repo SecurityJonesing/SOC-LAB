@@ -1104,3 +1104,33 @@ Wrote and applied a new pfSense rule on RANGE30 (Michael wrote the final rule pe
 5. **When picking a package version for a new tool, check compatibility constraints explicitly** (agent ≤ manager, in this case) rather than grabbing whatever a generic doc example shows — a newer-looking version number isn't automatically the right one.
 6. **The Claude in Chrome extension's controlled tabs closing unexpectedly is a real, if intermittent, failure mode** — when point-and-describe workflow breaks down repeatedly, falling back to "user builds it directly, Claude verifies via screenshot afterward" is a reasonable and fast recovery pattern rather than continuing to fight the tooling.
 7. **A password typed during a session lives in that session's raw transcript regardless of care taken afterward** — the fix is discipline about never repeating it back in chat or writing it into any tracked documentation, not pretending it can be scrubbed retroactively. Rotate if full removal from history is ever actually required.
+## 2026-08-11 — SSH key-only hardening on wazuh-host
+
+**Phase:**       C (Phase B follow-up item, closed out)
+**Goal:**        Disable password authentication for interactive SSH login on `wazuh-host`, closing the open follow-up from Phase B.
+**Rollback:**    Snapshot `pre-ssh-hardening-20260811` (VM 103, no RAM — crash-consistent), plus Proxmox console access as an out-of-band fallback that bypasses SSH entirely.
+**Transcript:**  session-2026-08-11-1722.txt
+
+### What happened
+Generated a personal SSH key pair (`wazuh-host_personal_ed25519`), separate from Claude Code's existing dedicated key and the git deploy key. Installed the public key into `wazuh-host`'s `~/.ssh/authorized_keys` via password-authenticated `ssh` (last password-based login before hardening). Verified key-based login worked end-to-end (`whoami` confirmed) before making any config changes — this was the hard gate before touching `sshd_config`.
+
+Edited `/etc/ssh/sshd_config` (`sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/'`), validated syntax with `sudo sshd -t` before restarting anything. First restart attempt (`systemctl restart sshd`) failed — Ubuntu names the unit `ssh.service`, not `sshd.service` (only the binary is `sshd`). Corrected to `systemctl restart ssh`, succeeded cleanly. Kept the original session open throughout as a live fallback and tested from a second window only after the restart.
+
+**Verification (two-sided):**
+- Key auth: `ssh -i wazuh-host_personal_ed25519 michael@10.10.20.100 "whoami"` → succeeded, prompted for key passphrase only, returned `michael`.
+- Password auth: `ssh -o PubkeyAuthentication=no michael@10.10.20.100` → rejected after repeated password prompts (`Permission denied`), confirming the server now refuses password auth outright.
+
+**One correction mid-session:** initially set the new key's passphrase to match the `michael` account password by mistake. Re-keyed with `ssh-keygen -p -f wazuh-host_personal_ed25519` to set an independent passphrase (new value stored in Keeper), then re-ran both verification tests to confirm nothing broke.
+
+Confirmed Claude Code's existing dedicated key (`wazuh-host_ed25519`, no passphrase, non-interactive use) still connects correctly post-hardening — unaffected by the change, as expected.
+
+### Outcome
+- `PasswordAuthentication no` is live and verified on `wazuh-host`. Interactive login now requires the personal key + passphrase; Claude Code's non-interactive key path is unaffected.
+- **Phase B's open SSH hardening follow-up is now closed.**
+- Snapshot `pre-ssh-hardening-20260811` retained as a rollback point; not needed, but kept per standing practice.
+- **Still open:** rotating the `wazuh-host` account password itself (was briefly typed in plaintext by an automation tool earlier in the build, caught before use) — deprioritized for now, revisit later if desired.
+
+### Lessons
+1. **Ubuntu's systemd unit for the SSH daemon is `ssh.service`, not `sshd.service`** — only the binary itself is named `sshd`. `systemctl restart sshd` fails with "Unit not found" even though the daemon and config are both correctly named `sshd` everywhere else. Use `ssh.service` for any systemctl operation on Ubuntu.
+2. **Always test a new key's passphrase independence, not just that a passphrase exists.** Reusing an existing account password as a key passphrase defeats the separation a key-based scheme is meant to provide — caught here only because it was flagged before the hardening step went further, not by any tooling.
+3. **The two-sided verification pattern (prove the allowed path works AND the disallowed path fails) is worth reusing** for any future auth-hardening step (e.g. Wazuh dashboard auth changes, Entra Connect service account scoping) — confirming only the happy path leaves open the possibility that the restriction itself silently didn't take effect.
