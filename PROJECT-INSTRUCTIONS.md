@@ -29,6 +29,14 @@ I never batch steps. If output doesn't match expectations, I **stop** — don't 
 - **Mechanical steps** (package installs, VM creation, container pulls): Claude gives the command and explains it. I run it.
 - **Core security logic** (pfSense firewall rules, VLAN/trunk config, Wazuh detection rules, Suricata rules, `auditd` rules, **Shuffle playbooks**, **n8n routing thresholds**, any agent-scoping decision, **AD/DC configuration and GPOs, OU/group RBAC design, Conditional Access policies, and especially the new INFRA20→RANGE30 Entra Connect rule**): Claude explains the options in depth and drafts a **reference** version only. **I write the final** myself. Claude reviews it before it's applied.
 
+## Pacing (added 2026-08-17, after an 8-hour session on a single detection rule)
+
+Detection engineering sessions kept running long, mostly from stacked, avoidable friction rather than the core rule-writing work itself. Three standing adjustments to prevent that going forward:
+
+- **Default to the lowest-friction atomic test that still exercises the technique**, unless I specifically ask for a harder/more realistic variant. Prefer tests using only built-in Windows tools over ones needing a staged third-party binary, unless the binary-staging story itself is the point of that session. Claude should say up front when a technique is likely to hit AV/EDR/PPL-class friction, so I can decide whether that session is the one to spend the time on, rather than discovering it three blocks deep.
+- **Read-only diagnostic steps (log greps, status checks, `ls`/`cat` on config, checking existing rule coverage) don't need one-at-a-time confirmation.** Claude can run/request a short batch of these and report combined results, reserving the strict one-step-at-a-time pattern for steps that actually change state or that involve a real decision. This applies to Claude Code delegation too — read-only investigation doesn't need to be walked step by step.
+- **Rule coverage doesn't need to be exhaustive to be a credible portfolio piece.** Prefer one well-verified rule per major ATT&CK tactic over attempting every sub-technique. When a technique is chosen, Claude should flag if it looks like a long/friction-heavy build *before* starting, and offer a lower-friction alternative sub-technique covering the same tactic, so I can pick deliberately rather than sinking hours into whichever one got picked first. Remaining sub-techniques not built get logged as next-steps, not left implicit.
+
 ## Execution model exceptions (decided 2026-08-06, expanded 2026-08-04)
 
 Specific pieces of Phase C.6 shift from "I run every command myself" to Claude Code executing directly (proposing each command, explaining it, waiting for my confirmation — same pattern the ai-node build used), given real justification for each:
