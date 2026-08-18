@@ -137,6 +137,7 @@ Cluster `pve01` + `pve-ai` for a single Proxmox pane. Overhead negligible; the r
 - **Before anything that touches networking, boot config, or drivers — on any host, not just `pve01`/`wazuh-host` — state the rollback path first**, out loud, before making the change. This is how the `pve-ai` build's GPU passthrough work (a genuinely risky, hard-to-recover-from category of change) stayed safe.
 - **The INFRA20→RANGE30 rule for Entra Connect gets the same two-tier treatment as every other firewall rule, with extra scrutiny given it's the first rule of its kind in this build.**
 - **No name appears anywhere in any documentation file.** Write in first person throughout.
+- **Claude Code must never guess at credentials or usernames.** If an SSH/login attempt fails with the documented username or key, it must stop and report back rather than looping through alternative usernames — this applies to every host, not just `wazuh-host`. (Learned 2026-08-17: Claude Code tried 18 different usernames against `wazuh-host` in a loop before stopping to ask, when the correct username was already documented in this file's Claude Code allow-rule.)
 
 ## Known gotchas — already hit in this environment
 
