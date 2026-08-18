@@ -1239,3 +1239,30 @@ Deployed via the standard `docker cp` → `chown wazuh:wazuh` → verify ownersh
 
 ### Lessons
 Reinforces the `100004` lesson: `if_group` chains are a known, silent failure risk regardless of how long a rule has been running without issue — "hasn't broken yet" is not the same as "safe." Worth a final pass checking any other custom rules for the same pattern before considering Phase C's rule set closed out.
+
+## 2026-08-18 — Rules `100006` (T1087.001) and `100007` (T1070.005): Discovery + Defense Evasion
+
+**Phase:**       C (Detection Engineering)
+**Goal:**        Add two more custom rules covering new tactics (Discovery, Defense Evasion), applying the new pacing rules (low-friction-first, batched read-only checks) from the prior session.
+**Transcript:**  Short, fast session — pacing changes worked as intended.
+
+### What happened
+Selected **T1087.001 (Local Account Discovery)** and **T1070.005 (Network Share Connection Removal)** specifically for low friction — both use only built-in `net.exe`, no staging, no elevation required. Checked atomic test lists for both in one batch before picking specific tests (`T1087.001-8`, `T1070.005-2`).
+
+**Hit one real, unplanned blocker:** the originally-planned Defense Evasion pick (T1070.004, Delete Prefetch File) generated no Sysmon telemetry at all. Investigated directly rather than assuming a rule problem — confirmed via `Get-MpThreatDetection` that Defender had not interfered (no detections since 8/17), then found the actual cause in `C:\SOC-Tools\sysmonconfig-export.xml`: the FileDelete (Event ID 23) `RuleGroup` is present only as a documentation comment header with no active rule block underneath — SwiftOnSecurity's config doesn't monitor file deletion at all in its current form on this VM. Rather than reconfigure Sysmon mid-session (a real environment change with broader effects), pivoted to T1070.005 instead, which relies on already-proven Event ID 1 telemetry.
+
+**Designed and deployed rules `100006` and `100007`**, both narrow-scope per explicit decision (matching exactly what was tested, not broader `net` command patterns), both chained via `<if_sid>61603</if_sid>` (the same Event 1 dispatch rule `100002` now uses), both set to **level 8** rather than 14 — a deliberate departure from prior rules, since `net user`/`net share /delete` are common legitimate admin activity and tagging them at credential-dumping severity would create alert fatigue.
+
+**Caught and fixed one drafting error before deployment:** the first draft of both rules used four backslashes (`\\\\net\.exe$`) for the `win.eventdata.image` field, incorrectly copying the escaping convention from `targetObject`-based rules (100004/100005). Cross-checked against `100002`'s own proven-working `image` field pattern (`\\powershell\.exe$`, two backslashes) before deploying — corrected both rules to match.
+
+Deployed via the standard sequence, restart confirmed clean (no parse errors), re-ran both atomic tests, verified via direct `archives.json` inspection: `100006` fired three times (once per enumeration command — `net user`, `net localgroup "Users"`, `net localgroup`), `100007` fired once (`net share \\test\share /delete`). Both timestamped after the restart, both with correct MITRE tags and Wazuh's auto-derived tactic/technique labels.
+
+### Outcome
+- **Six verified custom rules now live, spanning five tactics:** Execution (`100002`/`100003`, T1059.001/T1027), Persistence (`100004`, T1547.001), Credential Access (`100005`, T1003.001/T1546.012), Discovery (`100006`, T1087.001), Defense Evasion (`100007`, T1070.005).
+- **New pacing rules worked as intended** — this whole session (technique selection, two atomic tests, one real blocker diagnosed and pivoted around, two rules designed/deployed/verified) ran significantly faster than the T1003.001 session, despite hitting a genuine unplanned issue (missing FileDelete telemetry) along the way.
+- **Known gap documented, not silently worked around:** Sysmon's current config on Win11-LTSC-Victim does not capture FileDelete (Event ID 23) events. File-deletion-based detections (T1070.004 and similar) are not currently possible without a deliberate Sysmon config change — logged as a next-step, not attempted as a quick fix mid-session.
+
+### Lessons
+1. **A Sysmon config can have a named section for an event type without actually enabling it** — the presence of a "SYSMON EVENT ID 23 : FILE DELETE" header in the config is not evidence the event type is monitored; only an active (non-commented) `<RuleGroup>` block confirms that. Worth checking this directly for any future technique whose detection depends on a specific Sysmon event ID, rather than assuming standard SwiftOnSecurity coverage.
+2. **Field escaping conventions are not uniform across all Wazuh fields** — `win.eventdata.image` uses two backslashes per literal backslash, while `win.eventdata.targetObject` uses four, in this ruleset. Always cross-check a new rule's escaping against an existing *working* rule using the *same field*, not just any working rule.
+3. **Deliberately varying alert severity (level) by real-world base rate matters.** Rules for common legitimate admin actions (`net user`, `net share`) were set to level 8, not the level 14 used for genuinely rare/malicious-only artifacts (`100004`, `100005`) — same detection engineering principle as tuning for signal-to-noise, worth being able to articulate in an interview.
