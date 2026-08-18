@@ -1221,3 +1221,21 @@ Checked Sysmon directly for the underlying registry events (independent of wheth
 4. **`wazuh-logtest` fed raw JSON via `stdin` (with or without `-l EventChannel`) does not reliably reproduce the real Sysmon rule-matching path in this Wazuh version** — same underlying issue as documented for `100004`'s troubleshooting (`json` decoder vs. `windows_eventchannel`), confirmed again independently. Direct `archives.json`/alert-log inspection against a real, freshly-generated, correctly-timed test event remains the more reliable verification method for this environment.
 5. **When delegating diagnostic work to Claude Code, always confirm it has (or is pointed at) the correct connection details before it starts** — an unresolvable host alias or missing credential should trigger one clarifying question, not a guessing loop. This is now a standing rule, not just a one-off correction.
 6. **A test event's timestamp must be checked against the rule-load timestamp before concluding a rule "isn't firing."** An event that genuinely predates the rule's existence in the running manager will never match it, regardless of how correct the rule is — this cost significant troubleshooting time before the sequencing was noticed directly in Claude Code's own timestamp report.
+
+## 2026-08-18 — Fixed `100002` short-circuit risk (if_group → if_sid)
+
+**Phase:**       C (Detection Engineering)
+**Goal:**        Close the flagged-but-not-yet-fixed vulnerability in `100002` — the same silent short-circuit risk originally found and fixed in `100004`.
+**Transcript:**  Short session, SSH to `wazuh-host`.
+
+### What happened
+`100002` was still chaining onto `<if_group>sysmon_event1</if_group>` instead of a specific rule ID — the same pattern that silently broke `100004` before its fix. Confirmed the correct anchor via `grep` against `0595-win-sysmon_rules.xml`: rule `61603` matches Sysmon Event ID 1 specifically, chains onto `61600`, and its own `<group>` tag is literally `sysmon_event1` — i.e. `61603` is the actual rule generating the group tag `100002` was riding on. Re-chained `100002` onto `<if_sid>61603</if_sid>`. `100003` needed no change — it already chains onto `100002` via `if_sid`, correct from the start.
+
+Deployed via the standard `docker cp` → `chown wazuh:wazuh` → verify ownership → `wazuh-control restart` sequence. Restart clean, no parse errors. Re-ran `T1059.001-17` on Win11-LTSC-Victim; confirmed via direct `archives.json` inspection that `100003` fired correctly (level 14, both MITRE tags `T1059.001`/`T1027` intact) at 20:46:28 UTC, well after the 20:39:59 restart — since `100003` only fires when `100002` fires first, this confirms both rules are working under the new anchor.
+
+### Outcome
+- **`100002`/`100003` no longer at risk of the silent `if_group` short-circuit.** All four custom rules (`100002`–`100005`) now chain via `if_sid` onto specific rule IDs rather than group tags.
+- Closes the last flagged open item from the T1003.001 session (2026-08-17).
+
+### Lessons
+Reinforces the `100004` lesson: `if_group` chains are a known, silent failure risk regardless of how long a rule has been running without issue — "hasn't broken yet" is not the same as "safe." Worth a final pass checking any other custom rules for the same pattern before considering Phase C's rule set closed out.
