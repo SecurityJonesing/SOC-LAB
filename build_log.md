@@ -61,3 +61,62 @@ matches the file with no orphaned/half-working rule group in place.
 3. **This is a genuine, currently-unresolved gap** — not a documentation or config-syntax problem.
    Future sessions should start from Defender/PPL interaction as the next hypothesis, not repeat
    tonight's XML/encoding diagnostics.
+
+---
+
+## 2026-08-18 — Phase C.6 kickoff: Kali moved to RANGE30
+
+**Phase:**       C.6 (Attack Surface & AD Expansion) — infra hardening, sub-step 1 of 3
+**Goal:**        Move Kali from flat `vmbr1` to RANGE30, isolating it under the same model already
+                  proven for Win11-LTSC-Victim, as the first of three infra-hardening tasks that
+                  precede the AD/`dc01` build.
+**Transcript:**  Short session, GUI-only network change, verified via CLI from inside Kali.
+
+### What happened
+- Confirmed baseline state before changing anything: Kali's `net0` network device was on `vmbr1`,
+  no VLAN tag set.
+- In the Proxmox web UI, changed Kali's `net0` to bridge `vmbr3` (the VLAN-aware trunk carrying
+  VLANs 10/20/30), VLAN Tag `30`. Firewall checkbox left unchecked, consistent with the existing
+  pattern for other Range VMs — VLAN-level isolation is enforced by pfSense's rules, not per-VM
+  Proxmox firewalling.
+- Rebooted Kali via Proxmox's own Reboot control (not a guest-OS-level restart), to force the
+  hypervisor-side NIC replug and a clean DHCP renegotiation on the new segment.
+- First post-reboot `ip addr show` check appeared to show no IP address at all despite a default
+  route already being present — this turned out to be a timing gap, not a real failure. DHCP
+  completed moments later. Confirmed clean via three separate checks: `ip route show` (default via
+  `10.10.30.1` on `eth0`), `ip addr show` (`eth0` holding `10.10.30.101/24`, `dynamic`, no stale
+  static config), and `nmcli device status` (single normal `eth0` connection, no leftover profile
+  conflict from the old `vmbr1` config).
+
+### Acceptance check
+Three pings run from inside Kali post-move:
+- `8.8.8.8` (internet) — 100% loss ✅ expected; RANGE30 has no outbound internet by design.
+- `192.168.0.1` (home network / MGMT gateway) — 100% loss ✅ expected; RANGE30 cannot reach MGMT
+  or the home LAN.
+- `10.10.20.100` (`wazuh-host`, INFRA20) — 100% loss ✅ expected; ICMP is not one of RANGE30's three
+  explicit allow rules (Pass 1515, Pass 1514, default-deny), so this correctly fails even though
+  Kali can still reach `wazuh-host` on the two allowed Wazuh ports specifically.
+
+### Outcome
+Kali is confirmed isolated on RANGE30 — same live-proven isolation model as Win11-LTSC-Victim.
+This closes the "move Kali to RANGE30" item of Phase C.6 step 1 (infra hardening). Two
+infra-hardening items remain before the AD/`dc01` build proper starts:
+- pfSense log forwarding into Wazuh (firewall pass/block, DHCP, DNS)
+- WireGuard remote-access VPN configuration
+
+### Next-steps (logged, not built)
+- pfSense log forwarding into Wazuh — planned as syslog from pfSense to the Wazuh manager
+  (pfSense has no native Wazuh agent build; FreeBSD-based), scoped to accept only from pfSense's
+  INFRA20 IP.
+- WireGuard remote-access VPN — core security logic, reference drafted by Claude, final written
+  and applied manually.
+
+### Lessons
+1. **A "no IP yet" reading immediately after a VM reboot/NIC change can be a timing artifact, not
+   a real failure** — DHCP negotiation on Debian/Kali's NetworkManager stack can lag a few seconds
+   behind the interface coming up. Worth a second check before troubleshooting a "failure" that
+   may just need a moment to complete.
+2. **The three-ping acceptance pattern (internet / home-MGMT / INFRA20-ICMP) used for
+   Win11-LTSC-Victim in Phase B applies cleanly to any new Range VM** — a reusable acceptance
+   check for future RANGE30 isolation moves (`win11-ws02`, `dc01`, `linux-victim` will each want
+   the same three-ping confirmation once built).
