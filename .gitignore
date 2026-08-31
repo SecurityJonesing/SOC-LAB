@@ -1,6 +1,9 @@
 # Session transcripts — local only, never pushed to GitHub
 Logs/
 
+# Personal reference notes — not part of the tracked repo content
+git-commands-reference.md
+
 # Local reference workbooks — printed/personal use, not part of the tracked repo content
 SOC-Lab-Cheatsheet.docx
 SOC-Lab-Lesson-Plans*.docx
