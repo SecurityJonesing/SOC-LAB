@@ -801,6 +801,107 @@ No entries yet. Phase D (AI Triage Layer) has no work logged either — it comes
 
 ---
 
+## 2026-08-11 — Phase C Step 3: rule XML for 100002/100003, pulled from the live manager
+
+**Phase:** C
+**Goal:** Record the literal rule text for `100002`/`100003` alongside the narrative above. This was never committed to git as a tracked file — `local_rules.xml` lives only inside the `wazuh-host` manager container. Added retroactively (2026-08-29) after pulling the real file directly from the running container:
+```
+docker exec single-node-wazuh.manager-1 cat /var/ossec/etc/rules/local_rules.xml
+```
+This is the confirmed, live text, not a reconstruction from the narrative above.
+
+```xml
+<group name="sysmon,windows,attack,">
+
+<!-- first rule that and chained so no need for regex-->
+  <rule id="100002" level="12">
+    <if_sid>61603</if_sid>
+    <field name="win.system.channel">^Microsoft-Windows-Sysmon/Operational$</field>
+    <field name="win.system.eventID">^1$</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\powershell\.exe$</field>
+    <field name="win.eventdata.parentImage" type="pcre2">(?i)\\(cmd|wscript|cscript|mshta|wmic)\.exe$</field>
+    <description>PowerShell spawned by a suspicious parent process</description>
+    <mitre>
+      <id>T1059.001</id>
+    </mitre>
+  </rule>
+  <rule id="100003" level="14">
+    <if_sid>100002</if_sid>
+    <field name="win.eventdata.parentCommandLine" type="pcre2">(?i)(-enc|-e |-encodedcommand)</field>
+    <description>PowerShell spawned by a suspicious parent process, with an encoded command</description>
+    <mitre>
+      <id>T1059.001</id>
+      <id>T1027</id>
+    </mitre>
+  </rule>
+```
+
+---
+
+## 2026-08-18 — Phase C Step 3 (continued): rule XML for 100004–100007, pulled from the live manager
+
+**Phase:** C
+**Goal:** Same purpose as the entry above, extended to cover the remaining four rules. Added retroactively (2026-08-29), pulled from the same live file.
+
+```xml
+<!-- Second rule with two rules together not chained like the two above this needs regex to include both RUN AND RUNONCE
+T1547.001 - Registry Run/RunOnce key persistence -->
+  <rule id="100004" level="14">
+    <if_sid>92300</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)CURRENTVERSION\\\\(RUN|RUNONCE)\\\\</field>
+    <description>Registry Run/RunOnce key persistence established</description>
+    <mitre>
+      <id>T1547.001</id>
+    </mitre>
+  </rule>
+
+<!-- Fourth - T1546.012/T1003.001 - Silent Process Exit abuse: GlobalFlag set on lsass.exe IFEO key,
+     used to trigger WerFault-based LSASS memory dumping without directly opening a process handle -->
+<rule id="100005" level="14">
+<if_sid>61615</if_sid>
+    <field name="win.eventdata.targetObject" type="pcre2">(?i)SOFTWARE\\\\Microsoft\\\\Windows NT\\\\CurrentVersion\\\\Image File Execution Options\\\\lsass\.exe\\\\GlobalFlag</field>
+    <description>Credential dump lsass global flag</description>
+    <mitre>
+      <id>T1003.001</id>
+     <id>T1546.012</id>
+    </mitre>
+  </rule>
+
+<!-- Fifth - T1087.001 - Local Account Discovery via net user / net localgroup -->
+<rule id="100006" level="8">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\net\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(user|localgroup)</field>
+    <description>Local account or group enumeration via net.exe</description>
+    <mitre>
+      <id>T1087.001</id>
+    </mitre>
+  </rule>
+
+<!-- Sixth - T1070.005 - Network Share Connection Removal via net share /delete -->
+<rule id="100007" level="8">
+    <if_sid>61603</if_sid>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\net\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)share</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)delete</field>
+    <description>Network share removed via net.exe, possible indicator removal</description>
+    <mitre>
+      <id>T1070.005</id>
+    </mitre>
+  </rule>
+</group>
+```
+
+**Structural lessons these six rules established (see corresponding dated entries above for full detail):**
+1. Chain via `<if_sid>` onto a specific rule ID, never `<if_group>` alone — an earlier-loading built-in rule with a broader pattern will silently claim the event first.
+2. Field namespace is `win.*` in rule XML; `data.win.*` is only the exported/indexed alert JSON namespace.
+3. Escaping is not uniform: `win.eventdata.image` uses 2 backslashes, `win.eventdata.targetObject` uses 4. Always cross-check against a working rule using the *same field*.
+4. `wazuh-logtest` fed raw JSON via stdin is not reliable for Sysmon rules — routes through the generic `json` decoder, not `windows_eventchannel`. Direct `archives.json` inspection is the trustworthy verification method.
+5. `docker cp` preserves host file ownership, not the container's — always `chown wazuh:wazuh` after copying `local_rules.xml` in, and confirm with `ls -la`.
+6. `100007` shows a real example of two `<field>` elements sharing the same field name (`win.eventdata.commandLine`) inside one rule — Wazuh requires both to match (AND logic), which is how a single rule can require both "share" and "delete" to appear without one combined regex.
+
+---
+
 
 
 ## Phase E — Local AI Model Integration (`pve-ai` / `ai-vm` build)

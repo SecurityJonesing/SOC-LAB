@@ -20,28 +20,8 @@
 | 2x USB-to-Ethernet adapters | — | For SPAN destination (Suricata monitoring NIC) via USB passthrough. Chipset/throughput **must be verified** before Phase C.5 relies on them. NIC4 is the fallback. One adapter is currently in use for PC management access — free it (or confirm the second unit) before Phase C.5. |
 | QNAP TS-869 Pro | — | **Excluded from the lab as storage.** Existing home-file-share config left untouched. **One new role only:** may host a Proxmox **QDevice** (quorum tiebreaker) in Container Station once clustering happens — see Clustering below. |
 
-### `pve01` NIC allocation (confirmed working)
-| NIC | Linux interface | Bridge | Purpose | Status |
-|---|---|---|---|---|
-| NIC1 | `eno1` | `vmbr1` | Proxmox host management — `192.168.0.201/24`, gateway `192.168.0.1` confirmed | ✅ Confirmed working |
-| NIC2 | `eno2` | `vmbr2` (no IP) | pfSense WAN — plugs into home dumb switch | ✅ Attached to pfSense VM (net0), DHCP lease `192.168.0.131/24` confirmed |
-| NIC3 | `eno3` | `vmbr3` (no IP, VLAN-aware) | pfSense LAN — 802.1Q trunk to Cisco switch, carries all lab VLANs | ✅ Attached to pfSense VM (net1), all three VLAN interfaces created and IP-addressed |
-| NIC4 | `eno4` | — | Spare — **fallback SPAN destination NIC** if USB adapters prove unreliable | ✅ Confirmed link-up 2026-07-21; otherwise unused |
-
-**Known gotcha #1:** Proxmox does not allow two bridges to claim the same static IP simultaneously, even if one has no physical link — causes ARP ambiguity and silent ping failures. Always confirm with `ip addr show <bridge>` on *both* bridges after any reassignment.
-
-**Known gotcha #2:** Moving a physical cable or reassigning a bridge silently orphans any VM whose network device still points at the old bridge. Check every VM's Hardware tab after any bridge change.
-
-**Known gotcha #3:** A NIC showing no link may simply never have been brought administratively up (`ip link set <iface> up`) — not a hardware fault. Check admin state first. Related: a `build_log.md` entry stating a change was made is not proof it's still true weeks later — verify current state (`ip route show`, etc.) against the live system.
-
-**Known gotcha #4 (from the `pve-ai` build):** the Windows OpenSSH client has a recurring habit of hanging at 0% CPU *after* a remote command has already completed successfully and returned correct output — never before or during. Confirmed repeatedly not to be a host-side problem (host stayed reachable on port 22 throughout). Treat verified output as trustworthy even when the client process itself needs to be killed and the session retried.
-
-**Known gotcha #5 (from the `pve-ai` build):** PowerShell's string-escaping can silently mangle a `sed` command being sent over SSH (e.g. `unterminated 's' command`) before it ever reaches the remote host — a safe no-op, not a partial/dangerous edit, but worth verifying with a read-back (`cat`/`grep`) rather than assuming success. Building the remote command as a single-quoted PowerShell string, rather than double-quoted with escaped inner quotes, avoids the mangling.
-
-**Known gotcha #6 (from the `pve-ai` build):** the i9-10900KF has no integrated graphics — once its RTX 3070 is bound to `vfio-pci` for passthrough, the host's physical monitor goes completely dark at boot. This is expected, not a failure, and doesn't affect SSH/network reachability, since passthrough only changes which driver owns the GPU, not the NIC or networking stack. Worth stating this explicitly before rebooting any host mid-passthrough setup, so a dark screen isn't mistaken for a boot failure.
-
 ### Existing VMs on `pve01`
-- **Kali** — attack box (runs real network attacks: nmap, Responder, NetExec, etc.). Still on `vmbr1` (flat) as of Phase B — moves to RANGE30 in Phase C.6.
+- **Kali** — attack box (runs real network attacks: nmap, Responder, NetExec, etc.). **Moved from flat `vmbr1` to RANGE30 on 2026-08-18, isolation confirmed live via three pings** (no internet, no home/MGMT reach, no ICMP to INFRA20) — the same isolation model already proven for Win11-LTSC-Victim. This closed the first of three infra-hardening sub-steps in Phase C.6.
 - **Win11-LTSC-victim** — Windows victim. Moved to RANGE30 in Phase B (2026-08-04), isolation proven live, Sysmon + Wazuh agent reporting (agent ID `001`). Domain-joins to `soclab.internal` in Phase C.6; serves as the first lateral-movement hop.
 - **`wazuh-host` / `ubuntu-soc-host`** — Docker/Wazuh substrate on INFRA20, built in Phase B, complete.
 
@@ -52,93 +32,14 @@
 | `win11-ws02` | Windows 11, real live VM | **RANGE30** | Second, previously-uncompromised workstation — the actual lateral-movement target. Domain-joined. Without a second real host, "lateral movement" would only be reused credentials on the same box, not a genuine pivot. |
 | `linux-victim` | Ubuntu Server, minimal | **RANGE30** | Deliberate sudo misconfiguration, `auditd` + Wazuh agent, hosts the vulnerable web app (DVWA or Juice Shop) that provides Initial Access |
 | `entra-connect-01` | Windows Server, small | **INFRA20** | Runs Microsoft Entra Connect — bridges `dc01` to the Entra ID tenant. Needs outbound internet and one narrow inbound path to `dc01` — see VLAN plan below. |
-| 3–4 "phantom" computer objects | AD computer accounts only, `New-ADComputer`, no live VM behind them | N/A (directory objects only) | Populate the OU structure and give BloodHound/enumeration tooling a realistic-sized environment to map, without the RAM cost of building 3–4 more full VMs. |
+| 3–4 "phantom" computer objects | AD computer accounts only, `New-ADComputer`, no live VM behind them | N/A (directory objects only) | Populate the OU structure and give BloodHound/enumeration tooling a realistic-sized environment to map, without the RAM cost of building 3–4 more full VMs. (Five additional live Windows VMs was the originally floated number — judged too heavy against `pve01`'s 64GB total alongside Shuffle and Docker/Wazuh; this mix gets the realism without the resource risk.) |
 
-**Sizing note:** five additional live Windows VMs was the originally floated number and was judged too heavy against `pve01`'s 64GB total, especially with Shuffle (memory-hungry, flagged in Phase F) and Docker/Wazuh already resident. The mix above — two real, live, fully-instrumented hosts (`dc01`, `win11-ws02`) plus phantom computer objects for the rest — gets the directory-scale realism and BloodHound-mapping value without the resource risk.
+### VLAN / Network Plan
 
-### `pve-ai` / `ai-vm` — built, confirmed working (2026-07-12/13)
-
-This was originally tracked as a separate project in a local folder outside this repo and has since been merged into this single documentation set — one project, not two. Its own `build_log.md` and `hybrid_ai_node_build_plan.md` remain as historical source material but are no longer the authoritative, actively-maintained record; this file and the main `build_log.md` are.
-
-- **`pve-ai`** (the Proxmox host itself) = `192.168.0.202`, hostname `pve-ai`. **`ai-vm`** (the Ubuntu Server 24.04 VM on it, VMID 100) = `192.168.0.203`.
-- **Role in this lab: local inference only.** Runs Ollama on the RTX 3070. It's the only box that can do GPU inference — the R710 has no usable GPU — so all local AI work physically lives here. Not part of the attack range. Stays reachable to the Infra VLAN so the triage layer and Open WebUI can call it.
-- **What's already done (Phases 0–5 of the original ai-node plan, all complete 2026-07-12/13):**
-  - BIOS virtualization (VMX, VT-d) enabled; Proxmox VE installed, no-subscription repo enabled (enterprise/ceph repos disabled by rename, not deletion).
-  - IOMMU verified via `dmesg` (DMAR/VT-d confirmed at the ACPI level), then actually enabled via `intel_iommu=on iommu=pt` in `GRUB_CMDLINE_LINUX_DEFAULT`, confirmed live via `/proc/cmdline` and `dmesg` showing `IOMMU enabled` post-reboot.
-  - IOMMU groups mapped — the RTX 3070 sits **alone** in its own group (Group 1), the clean passthrough case with no ACS override or slot change needed. PCI IDs: `10de:2488` (video, `01:00.0`), `10de:228b` (audio, `01:00.1`).
-  - GPU bound to `vfio-pci` via `/etc/modprobe.d/vfio.conf` (`options vfio-pci ids=10de:2488,10de:228b`) plus `/etc/modules` (`vfio`, `vfio_iommu_type1`, `vfio_pci`) and a driver blacklist (`nouveau`, `nvidia`, `nvidiafb`, `snd_hda_intel`) at `/etc/modprobe.d/blacklist-gpu.conf`. Confirmed via `lspci -nnk` showing `Kernel driver in use: vfio-pci` on both GPU functions, stable across reboot. **Side effect, accepted:** onboard motherboard audio is disabled too, since it shares the `snd_hda_intel` module — a non-issue on a headless server.
-  - `ai-vm` (Ubuntu Server 24.04, `q35`/OVMF, 16 cores, 26GB RAM — sized down from an original 32GB plan once actual host RAM was confirmed at ~31GB total, leaving 5GB host headroom since VM memory isn't ballooned in this config) created with the RTX 3070 passed through as `hostpci0`.
-  - NVIDIA driver (`nvidia-driver-595-open`) installed and verified: `nvidia-smi` shows the RTX 3070, driver `595.71.05`, CUDA `13.2`, `8192MiB` VRAM.
-  - Snapshot `clean-gpu-working` taken (Rollback Point 2 in the original plan) — a known-good restore point if anything in the remaining Ollama/Open WebUI work goes wrong.
-- **What's left:** Phase 6 of the original plan (Ollama install, a starter model sized for 8GB VRAM, Open WebUI, cloud-model connection) plus this project's own Phase E integration/routing work (n8n router, `agent-registry.md` entry). See Phase E below — this is where the two plans now meet as one.
-
-### Network — current state
-- pfSense CE 2.8.1 running (VM 102), all three VLAN interfaces created and reachable — **Phase A complete**: `10.10.10.1/24` MGMT, `10.10.20.1/24` INFRA, `10.10.30.1/24` RANGE.
-- Cisco switch factory reset, VLANs 10/20/30 created, `Gi1/0/3` trunk to pfSense, `Gi1/0/48` management access port. Console via USB-serial + PuTTY (COM14, 9600/8/1/None/None).
-- iDRAC recovered and secured: `https://192.168.0.100`.
-
----
-
-## Target AI Architecture (local-first hybrid)
-
-The decided shape, folded into the phases below:
-
-- **Local-first.** Ollama on `pve-ai` (RTX 3070) is the default brain for everything — routine SOC triage and my own daily AI use. Costs electricity, keeps data on-network, unlimited.
-- **Cloud supplements, on a threshold.** Escalate to **Claude Code** (`claude -p` headless — draws from my existing subscription, **no per-token API billing**) or **Grok** (its own API, pay-as-you-go) only when a harder/ambiguous case justifies it. I set the escalation threshold.
-- **n8n is the router.** n8n makes the local-vs-cloud decision for SOC triage and general lab automation. It's a non-human decision-maker → governed in `agent-registry.md` as `triage-router-01`. **The `pve-ai` node is dedicated to lab/SOC use only — not personal AI use.**
-- **Open WebUI is the lab's chat interface for SOC-related work** — points at Ollama by default, with Claude/Grok selectable. Hosted on `pve01` (service host), reached from any browser.
-- **Two engines, two lanes:** n8n = AI orchestration + general automation; Shuffle = SOC incident response (Phase F). Kept separate deliberately. **Never build both automation engines in the same stretch** — Shuffle first (Phase F), n8n later with the AI stack.
-
-### Where things run
-- **`pve-ai`:** Ollama (GPU inference). Nothing I click on lives here.
-- **`pve01` (service host):** pfSense, Wazuh, Suricata, Shuffle, Open WebUI, n8n, `entra-connect-01`, and the Range VMs (`dc01`, `win11-ws02`, `linux-victim`, Win11-LTSC-victim, Kali). All service UIs live here, reached from the browser.
-- **Browser / phone (MGMT VLAN):** where I interact with everything.
-- **Microsoft Entra ID tenant / Exchange Online:** cloud-hosted, outside `pve01`/`pve-ai` entirely — reached over the internet from INFRA20 (via `entra-connect-01`) and from MGMT10 (via browser).
-
-### Clustering (decided — sequence TBD, low priority)
-Cluster `pve01` + `pve-ai` into one Proxmox web UI so both nodes manage from a single pane. Overhead is negligible (corosync + config DB, a few hundred MB RAM — does not touch inference performance). **The real issue is two-node quorum:** if either node goes offline the survivor drops to read-only. Fix with a **QDevice** tiebreaker hosted on the QNAP (Container Station) — the clean path. Manual `pvecm expected 1` is the fallback when a node is intentionally down. Treat clustering as an optional convenience layer; it does not gate any SOC phase.
-
----
-
-## Target Network Topology
-
-```
-Home Router (192.168.0.1) — DHCP/internet for the house
-        │
-   [dumb switch @ desk] ── My PC (stays here, unaffected)
-        │
-     NIC2 (pfSense WAN)
-        │
-   pfSense VM (on pve01) — includes remote-access VPN (Phase C.6)
-        │
-     NIC3 (pfSense LAN — 802.1Q trunk)
-        │
-   Cisco Switch (factory-reset, freshly configured)
-   ┌────┴────┬──────────────────────┬────────────────────┐
-Mgmt VLAN  Infra VLAN             Range VLAN           SPAN monitor port
-(my PC     (Wazuh/Docker          (Kali, Win11-         (mirrors Range VLAN
- lab port)  host: Wazuh,           victim, win11-ws02,    traffic, receive-only)
-            Suricata,              dc01, linux-victim,          │
-            Shuffle,               + phantom computer     USB-Ethernet adapter
-            Open WebUI, n8n,       objects in AD)          (passed through to Wazuh
-            entra-connect-01,                                host, Suricata listens
-            + pve-ai inference)                               here — no IP)
-
-                Microsoft Entra ID tenant + Exchange Online
-                (cloud, reached via entra-connect-01 on INFRA20
-                 and directly via browser from MGMT10)
-```
-
-**Three layers of visibility (as in a real SOC):**
-- **Host-based** — Sysmon/`auditd` on victim VMs → Wazuh agent → Wazuh (crosses the Range→Infra fence on TCP 1514/1515 only).
-- **Network-based** — SPAN port mirrors Range VLAN traffic → Suricata (passive, no IP) → alerts into Wazuh. Correlating both is the high-value detection-engineering skill this lab demonstrates.
-- **Identity-based** — Entra ID sign-in logs, Conditional Access enforcement outcomes, Exchange Online Protection mail-flow logs (Phase C.7).
-
-### VLAN plan
-| VLAN | Members | Access rules |
+| VLAN | Purpose | Access |
 |---|---|---|
-| **Management (10)** | My PC (lab port) | Can reach all VLANs for admin (Proxmox UI, Wazuh/Shuffle/n8n/Open WebUI dashboards, pfSense UI, iDRAC, Entra ID admin center, Exchange admin center) |
-| **Infra (20)** | Ubuntu SOC host, `pve-ai`, `entra-connect-01`, Shuffle (Phase F) | Receives Range logs on Wazuh's ports only. Needs a defined outbound-internet rule (Docker/apt/`suricata-update`, Ollama model pulls, Shuffle enrichment to VirusTotal/AbuseIPDB, Entra Connect's sync traffic to Microsoft). **A single narrow Pass rule from `entra-connect-01` to `dc01` on RANGE30, for Entra Connect's sync traffic only** — see the callout below. |
+| **Management (10)** | Management PC | Full access to all VLANs for admin |
+| **Infra (20)** | `wazuh-host`, `pve-ai`, `entra-connect-01`, Shuffle | Receives Range logs. Needs a defined outbound-internet rule (Docker/apt/`suricata-update`, Ollama model pulls, Shuffle enrichment to VirusTotal/AbuseIPDB, Entra Connect's sync traffic to Microsoft). **A single narrow Pass rule from `entra-connect-01` to `dc01` on RANGE30, for Entra Connect's sync traffic only** — see the callout below. |
 | **Range (30)** | Kali, Win11-LTSC-victim, `win11-ws02`, `dc01`, `linux-victim` | **Cannot** reach home network, internet, or Management. Only allowed outbound path: to Wazuh's log-ingest/enrollment ports on Infra. **One narrow, reviewed exception, inbound from Infra:** the Entra Connect sync rule below. |
 
 **Critical pfSense rule (unchanged principle):** Range VLAN → default deny all, explicit allows only. Verify before any Atomic Red Team or Phase C.6 simulation.
@@ -164,7 +65,7 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 4. ✅ Install Git, create/clone the repo. Pre-push secret check. *(2026-08-03 — cloned to `~/soc-lab` via a dedicated SSH deploy key. INFRA20 needed a 5th rule, port 22, discovered along the way.)*
 5. ✅ Deploy Wazuh (manager + indexer + dashboard) via Compose; check the current tag against `documentation.wazuh.com`. Change the default password. Mount rules host-side (`./config/rules/local_rules.xml`). *(2026-08-03/04 — Wazuh 4.14.6 deployed, admin password rotated via the `internal_users.yml`/`securityadmin.sh` procedure.)*
 6. ✅ Move Win11-LTSC-victim to Range VLAN, install Sysmon + Wazuh agent pointed at the Sysmon channel. *(2026-08-04 — isolation proven live, agent ID `001` active.)*
-7. Move Kali to Range VLAN — **not done in Phase B, moved to Phase C.6 step 1.**
+7. Move Kali to Range VLAN — **not done in Phase B, moved to Phase C.6 step 1. Completed 2026-08-18 — see Phase C.6 below.**
 8. ✅ Re-test the isolation rule: victim reaches Wazuh on 1514/1515, still no internet. Confirmed 2026-08-04.
 9. ✅ **Acceptance check:** dashboard shows the victim active with Sysmon events. Confirmed.
 
@@ -172,15 +73,26 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 
 ---
 
-### Phase C — Detection Engineering ⏳ NOT STARTED
-1. Snapshot Win11-LTSC-victim (`pre-atomic-clean`).
-2. Install Atomic Red Team **on the victim** (it runs on the box I want telemetry from), reusing the ISO-staging pattern proven in Phase B (download on the management PC → build ISO → attach as virtual CD — Range has no internet by design). Add the `C:\AtomicRedTeam` Defender exclusion — safe only because the VM is fenced (Phase A.5).
-3. Run a first technique (`T1059.001`) locally, confirm Wazuh alerts.
-4. Write a first custom detection rule. **I write the final rule**; Claude drafts a reference only. Rules live host-side in `config/rules/local_rules.xml`. IDs start at 100000.
-5. Commit rules/config-as-code.
-6. **Acceptance check:** a committed rule of my own authorship fires on a re-run.
+### Phase C — Detection Engineering ✅ COMPLETE
+1. ✅ Snapshot Win11-LTSC-victim (`pre-atomic-clean`).
+2. ✅ Install Atomic Red Team **on the victim** (it runs on the box I want telemetry from), reusing the ISO-staging pattern proven in Phase B (download on the management PC → build ISO → attach as virtual CD — Range has no internet by design). Added the `C:\AtomicRedTeam` Defender exclusion — safe only because the VM is fenced (Phase A.5).
+3. ✅ Ran a first technique (`T1059.001`) locally, confirmed Wazuh alerts.
+4. ✅ Wrote six custom detection rules. **I wrote every final rule**; Claude drafted a reference for each. Rules live host-side in `config/rules/local_rules.xml`, IDs `100002`–`100007`:
+   - `100002`/`100003` — PowerShell spawned by a suspicious parent process, escalating on encoded commands (T1059.001/T1027 — Execution)
+   - `100004` — registry Run/RunOnce key persistence (T1547.001 — Persistence)
+   - `100005` — LSASS credential dumping via Silent Process Exit / IFEO GlobalFlag abuse (T1003.001 + T1546.012 — Credential Access)
+   - `100006` — local account/group enumeration via `net.exe` (T1087.001 — Discovery)
+   - `100007` — network share removal via `net.exe` (T1070.005 — Defense Evasion)
+
+   Five tactics covered across six rules. All chained via `if_sid` onto specific built-in rule IDs — `100002`/`100004` were both initially chained via the broader `if_group` and silently short-circuited by an earlier-loading built-in rule; both were found and re-chained onto `if_sid`, closing the same structural risk across the full rule set.
+5. ✅ Committed rules/config-as-code.
+6. ✅ **Acceptance check:** every rule, of my own authorship, confirmed firing on a fresh atomic-test re-run, verified via direct `archives.json` inspection (the trustworthy method in this environment — `wazuh-logtest` fed raw JSON does not reliably reproduce the real Sysmon match path).
 
 **Complete (2026-08-11):** SSH key-only hardening on `wazuh-host` — personal key pair generated and installed, `PasswordAuthentication no` set and verified (password auth rejected, key auth succeeds), Claude Code's existing non-interactive key confirmed unaffected. See `build_log.md` for full session detail.
+
+**Known gap, not yet resolved:** Sysmon's current config on Win11-LTSC-Victim does not capture FileDelete-family events (Event ID 23/26). Attempted enabling Event 26 on 2026-08-18 — config validated and reloaded clean, but the event never fired in the live driver; root cause not isolated. Next hypothesis is Defender/PPL interaction, not an XML/config-syntax issue. File-deletion-based detections (T1070.004 and similar) remain blocked until this is deliberately revisited.
+
+**Still open:** rotate the `wazuh-host` account password itself (was briefly typed in plaintext by an automation tool early in the build, caught before use). Key-only SSH login is enforced and closes the access risk, but does not close this item.
 
 ---
 
@@ -194,7 +106,7 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 
 ---
 
-### Phase C.6 — Attack Surface & AD Expansion ⏳ NOT STARTED
+### Phase C.6 — Attack Surface & AD Expansion ⏳ IN PROGRESS
 
 **Why:** the lab as built through Phase C.5 proves single-host detection engineering against one isolated Windows victim. It can't demonstrate lateral movement to a genuinely separate host, a real initial-access vector, AD-specific credential and certificate attacks, or Discovery-stage tooling (BloodHound). This phase closes those gaps with a realistic, full-depth Active Directory environment and one coherent, end-to-end kill chain.
 
@@ -205,9 +117,9 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 **Sub-steps:**
 
 1. **Infra hardening (do first, before the AD work):**
-   - Forward pfSense logs (firewall pass/block, DHCP, DNS) into Wazuh.
-   - Move Kali to RANGE30 (still flat on `vmbr1` since Phase B).
-   - Configure a pfSense remote-access **WireGuard** VPN — decided over OpenVPN for its simpler configuration surface (fewer places for a subtle rule mistake), better performance, and native integration in pfSense CE since 2.5. A second, credential-based Initial Access vector, distinct from and complementary to the web-app exploit path. I write the final firewall rules, Claude drafts a reference.
+   - Forward pfSense logs (firewall pass/block, DHCP, DNS) into Wazuh. **Not yet done.**
+   - ✅ **Move Kali to RANGE30 — complete 2026-08-18.** Isolation confirmed live via three pings (no internet, no home/MGMT reach, no ICMP to INFRA20).
+   - Configure a pfSense remote-access **WireGuard** VPN — decided over OpenVPN for its simpler configuration surface (fewer places for a subtle rule mistake), better performance, and native integration in pfSense CE since 2.5. A second, credential-based Initial Access vector, distinct from and complementary to the web-app exploit path. I write the final firewall rules, Claude drafts a reference. **Not yet done.**
 
 2. **AD/DC build:**
    - Stand up `dc01` — Windows Server 2022, Core install, on RANGE30, sized modestly (2 vCPU / 4–8GB). **VM creation and Windows install are Claude Code-executed** — genuinely new territory, delegated as a deliberate time-saving trade-off given the overall scope size, not because it repeats known work.
@@ -346,36 +258,48 @@ The underlying `pve-ai`/`ai-vm` infrastructure (GPU passthrough, Ubuntu VM, NVID
 
 | Block | Manual (hrs) | Automated (Claude Code) |
 |---|---|---|
-| Phase C | 5–7 | — |
-| SSH key-only hardening, `wazuh-host` | 0.5–1 | — |
+| Phase C | 5–7 (complete) | — |
+| SSH key-only hardening, `wazuh-host` | 0.5–1 (complete) | — |
 | Phase C.6 (infra hardening, VPN, full AD build design + misconfigurations, expanded Kali tooling, full kill chain incl. Discovery/BloodHound workflow, LAPS before/after, stitching + writeup) | 38–52 | ~5.5–9 |
 | Phase C.7 (Entra ID Free + Entra Connect + Exchange Online + P1 trial + AADInternals/ROADtools) | 11–19 | ~1.5–2.5 |
 | Phase D | 5.5–9 | — |
 | Phase E | 4.5–6.5 | — |
 | Phase F | 4.5–8.5 | — |
-| **Total (Phase C through F; Phase A/A.5/B complete; Phase C.5 unaffected by this revision)** | **~69–103 hrs** | **~7–11.5 hrs** |
+| **Total remaining (Phase C.6 through F; Phase A/A.5/B/C complete; Phase C.5 unaffected by this revision)** | **~69–103 hrs** | **~7–11.5 hrs** |
 
 **What's automated, final version (2026-08-06, revised):** `dc01`'s VM creation, base Windows Server install, and AD DS role install only — **not** `Install-ADDSForest` itself, which is where the real decisions live (forest/domain functional level, DNS strategy, DSRM password) and stays manual, along with Kerberos Policy configuration, the PDC Emulator time source, and post-build verification. `win11-ws02`'s full build (VM/Windows/Sysmon/Wazuh agent), domain-joining both workstations, AD account creation/OU placement/group membership assignment (not group creation), the AD port-list firewall rules on RANGE30, Entra Connect's VM creation and software install (not sync account scoping or the firewall rule), and Exchange Online mailbox creation (not Attack Simulation Training design) are all Claude Code-executed. Everything with real security or design judgment — the OU/tiered-model design, group creation, GPOs, all six deliberate misconfigurations, the WireGuard VPN configuration, the INFRA20→RANGE30 Entra Connect rule, Conditional Access/MFA testing, and AADInternals/ROADtools — stays fully manual. See "Execution model exceptions" in `PROJECT-INSTRUCTIONS.md` for the full reasoning.
 
-At ~15–17 hrs/week (baseline pace inferred from `build_log.md`, plus a 5 hr/week weekday addition): **roughly 4.1–6.9 weeks**, realistically **4–7 weeks**.
+At ~15–17 hrs/week (baseline pace inferred from `build_log.md`, plus a 5 hr/week weekday addition): **roughly 4.1–6.9 weeks**, realistically **4–7 weeks**, for the remaining scope.
+
+**Current priority note (2026-08-24):** all Phase C.6+ work above is paused pending an active job search — see `PROJECT-INSTRUCTIONS.md`'s "Current priority" section. Nothing in this phase-by-phase plan is cancelled; the estimates above remain the plan for whenever work resumes.
 
 ---
 
 ## Explicitly out of scope (documented next-steps, not live plan)
 
 - **MITRE Caldera** — post-compromise attack-chain orchestration. Would work against the "I executed this myself, end to end" narrative for a modest time saving. Revisit only with runway to spare after the locked plan is complete.
-- **Entra ID P2** (Identity Protection, PIM, Access Reviews) — architect-tier, not day-to-day analyst work.
-- **On-prem Exchange Server** — real complexity/troubleshooting risk for marginal skill gain over Exchange Online given the target roles.
-- **Standalone GoPhish + a lightweight mail relay** — superseded by Exchange Online + Defender for Office 365 Attack Simulation Training.
-- **Full interactive host-level compromise of `dc01`** (gaining a shell on the DC itself, planting persistence there, running impact against it) — the DCSync misconfiguration provides a genuine, real attack path to domain-wide credential material without this; a fully compromised DC as its own stage is documented as a writeup next-step.
+- **Microsoft Entra ID P2** — Identity Protection's risk-based sign-in scoring, Privileged Identity Management, Access Reviews. More architect-tier than day-to-day analyst work; the Free tier plus a time-boxed P1 trial covers the target skill set.
+- **On-prem Exchange Server** — Exchange Online only. On-prem Exchange's setup/troubleshooting risk outweighed its actual relevance to the target roles.
+- **Standalone GoPhish + mail relay** — Exchange Online's own Defender for Office 365 Attack Simulation Training is used instead, specifically to avoid ambiguity around automated abuse-detection systems flagging a homebuilt phishing campaign.
+- **Full interactive host-level compromise of `dc01`** — the DCSync misconfiguration provides a genuine, real-world path to domain-wide credential material without needing a shell on the DC itself. Documented as a deliberate scope boundary and a future `investigations/` next-step, not a shortfall.
 
 ---
 
-## Standing Rules (carried over, apply throughout)
-- Ask my approval before creating any file, document, image, or phase not already scoped here — including new next-steps identified mid-build: log them, don't build them, unless there's a deliberate decision to revisit scope.
-- Warn me before analyzing screenshots.
-- Flag and check in before pursuing tangents.
-- One network change at a time, tested before the next.
-- Confirm console/recovery access before any change that could lock out management.
-- Core security logic (firewall rules, VLAN/trunk config, detection rules, Shuffle playbooks, agent scoping, AD/GPO configuration, OU/group design, Conditional Access policies, `auditd` rules, and especially the new INFRA20→RANGE30 Entra Connect rule) — Claude drafts a reference, **I write the final**.
-- Explain-it-back checkpoint after each phase.
+## Clustering — decided, low priority
+
+Cluster `pve01` + `pve-ai` for a single Proxmox pane. Overhead negligible; the real issue is two-node quorum (survivor drops to read-only if one node is down). Fix with a **QDevice** on the QNAP (Container Station). Fallback: `pvecm expected 1`. Doesn't gate any SOC phase — convenience layer only. This was also flagged as "Phase 7 (optional/later)" in the original, now-merged `pve-ai` plan — same item, one list.
+
+---
+
+## Source of truth
+
+The `.docx` workbooks that used to accompany this build have been retired (2026-08-03) — they duplicated what's already in the `.md` files below and went stale independently. These four files are now the entire documentation set:
+
+- **`LAB-BLUEPRINT.md`** (this file) — what I'm building and in what order, including the locked Phase C.6 (AD/kill-chain expansion) and Phase C.7 (IAM/Entra ID), plus Phase F SOAR and the deferred Phase G
+- **`build_log.md`** — the running, append-only record, organized by phase rather than strict calendar date; now also incorporating the merged AI node build history under its relevant phase (E)
+- **`agent-registry.md`** — every AI agent's scope, owner, lifecycle (`wazuh-triage-01`, `triage-router-01`)
+- **`README.md`** — repo-facing overview, phase status table, diagram link
+
+The former `ai-node` project's own `build_log.md` and `hybrid_ai_node_build_plan.md` are retained as historical source material but are no longer separately maintained — everything current lives in the four files above.
+
+Keep this file short and current. Update it whenever a phase status, scope decision, or environment fact changes.
