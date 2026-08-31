@@ -1,0 +1,8 @@
+# Session transcripts — local only, never pushed to GitHub
+Logs/
+
+# Local reference workbooks — printed/personal use, not part of the tracked repo content
+SOC-Lab-Cheatsheet.docx
+SOC-Lab-Lesson-Plans*.docx
+SOC-Lab-Phase-Checklists*.docx
+*.OLD.docx
