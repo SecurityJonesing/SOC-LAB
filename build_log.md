@@ -1494,3 +1494,98 @@ infra-hardening items remain before the AD/`dc01` build proper starts:
    Win11-LTSC-Victim in Phase B applies cleanly to any new Range VM** — a reusable acceptance
    check for future RANGE30 isolation moves (`win11-ws02`, `dc01`, `linux-victim` will each want
    the same three-ping confirmation once built).
+
+---
+
+## 2026-08-31 — Phase C.5: SPAN destination decided, switch-side SPAN session configured
+
+**Phase:**       C.5 (Network Visibility — SPAN + Suricata)
+**Goal:**        Resolve the open SPAN-destination-NIC decision, physically cable it, and configure
+                  the SPAN session on the Cisco switch, before continuing Phase C.6's AD/`dc01` work.
+**Rollback:**    None needed for this session — switch config change is additive (new `monitor session`),
+                  no existing config touched. Standard `copy running-config startup-config` still pending
+                  until the full Phase C.5 config (Suricata side) is complete and verified.
+**Transcript:**  PuTTY session log, `Logs\switch-YYYYMMDD-HHMMSS.log` (all-session-output logging on
+                  before connecting, per standing rule).
+
+### What happened
+
+**Sequencing correction noted first.** Phase C.6 (moving Kali to RANGE30, 2026-08-18) had been started
+before Phase C.5 (Network Visibility), which wasn't a deliberate, logged decision — just happened.
+Decided to come back and complete C.5 properly before resuming C.6's AD/`dc01` work.
+
+**SPAN destination NIC — resolved.** This was the first open blocker for C.5, per the open-decisions
+list in `PROJECT-INSTRUCTIONS.md` (USB-Ethernet adapter chipset unverified, one adapter borrowed for
+PC management access, NIC4 documented as fallback). Checked current state:
+- USB adapter (Plugable USB3-E1000) — confirmed working, but committed to the management PC via
+  switch port `Gi1/0/48` for ongoing mgmt access. Not free for SOC lab use.
+- Second adapter unit — not confirmed to exist/work.
+
+With the USB path unavailable, **NIC4 (`eno4`, labeled "Gb4" on `pve01`) is the SPAN destination** —
+the documented fallback, now formally decided rather than a placeholder.
+
+**Physical cabling.** Ran a cable from `pve01`'s NIC4/Gb4 to Cisco switch port `Gi1/0/4` — chosen
+specifically to avoid `Gi1/0/3` (trunk, in use), `Gi1/0/48` (mgmt, occupied), and `Gi1/0/49`/`Gi1/0/50`
+(hardware-faulty, confirmed err-disabled since the factory reset).
+
+**Link verification — `show interface status`:**
+```
+Gi1/0/4                      connected    1          a-full a-1000 10/100/1000BaseTX
+```
+Confirmed `connected`, full duplex, 1000BaseTX. VLAN column shows `1` (default) — expected and fine,
+since a SPAN destination port's VLAN membership doesn't matter once a monitor session is active;
+mirrored traffic bypasses normal VLAN-based forwarding.
+
+**SPAN session configured:**
+```
+enable
+configure terminal
+monitor session 1 source vlan 30
+monitor session 1 destination interface gi1/0/4
+end
+```
+- Source: VLAN 30 (RANGE30) — captures all traffic on the Range segment, both directions.
+- Destination: `Gi1/0/4` — physical port NIC4 is cabled to.
+
+**Verification — `show monitor session 1`:**
+```
+Session 1
+---------
+Type                     : Local Session
+Source VLANs             :
+    Both                 : 30
+Destination Ports      : Gi1/0/4
+    Encapsulation      : Native
+          Ingress      : Disabled
+```
+Confirms: source = VLAN 30 both directions, destination = `Gi1/0/4`, Ingress Disabled (correct —
+destination port is receive-only for mirrored traffic, cannot inject traffic back onto the switch).
+
+### Outcome
+- SPAN destination NIC decision closed — NIC4/Gb4, formally resolved (was previously an open item
+  in `PROJECT-INSTRUCTIONS.md`'s "still genuinely open" decisions list).
+- Physical link confirmed live: `pve01` NIC4 ↔ switch `Gi1/0/4`.
+- Switch-side SPAN session live and verified: mirroring all RANGE30 (VLAN 30) traffic, both
+  directions, out to `Gi1/0/4`.
+- Switch running-config not yet saved to startup-config — deferred until the `pve01`/Suricata side
+  is also complete, so the save covers the full working Phase C.5 config in one step.
+
+### Next-steps (logged, not built)
+- Bring up NIC4's Linux interface on `pve01` (`ip link set <iface> up`) and set it to promiscuous
+  mode, so it actually captures mirrored frames instead of silently dropping them (a NIC in normal
+  mode discards traffic not addressed to it).
+- Install Suricata on `pve01` (or a dedicated location per `LAB-BLUEPRINT.md`) and point it at the
+  NIC4 interface as its listening source.
+- Once both sides are verified working end-to-end, save the switch config
+  (`copy running-config startup-config`) and update `PROJECT-INSTRUCTIONS.md`'s open-decisions
+  section to remove the now-resolved USB-Ethernet-adapter/SPAN-NIC item.
+- Update `README.md`'s phase status table — Phase C.5 is in progress, not yet complete.
+
+### Lessons
+1. **The USB-Ethernet-adapter-vs-NIC4 decision only had two real outcomes once checked: adapter
+   committed elsewhere, or adapter free/chipset-unverified.** Neither required deep troubleshooting —
+   just confirming current physical/usage state closed the decision immediately. Worth remembering
+   that some "open decisions" resolve fast once actually checked, rather than needing new information.
+2. **A SPAN destination port's own VLAN assignment is irrelevant to its function** — it showed
+   default VLAN 1 and that's correct; don't mistake this for a misconfiguration when reviewing
+   `show interface status` output for a monitor-session destination port.
