@@ -1589,3 +1589,142 @@ destination port is receive-only for mirrored traffic, cannot inject traffic bac
 2. **A SPAN destination port's own VLAN assignment is irrelevant to its function** — it showed
    default VLAN 1 and that's correct; don't mistake this for a misconfiguration when reviewing
    `show interface status` output for a monitor-session destination port.
+
+---
+
+## 2026-08-31 — Phase C.5: NIC4 bridged and passed through to wazuh-host
+
+**Phase:**       C.5 (Network Visibility — SPAN + Suricata)
+**Goal:**        Bring up the SPAN destination NIC (`eno4`/NIC4) on `pve01`, then get that mirrored
+                  traffic onto `wazuh-host` (the Infra host, per `LAB-BLUEPRINT.md` step 3) so
+                  Suricata can eventually bind to it there — continuing directly from this morning's
+                  switch-side SPAN session work.
+**Rollback:**    `pve01` side — additive only (`ip link set` state change on an otherwise-unused
+                  interface, new `vmbr4` bridge containing only `eno4`); reversible with
+                  `ip link set eno4 down` or removing the `vmbr4` stanza from
+                  `/etc/network/interfaces`. `wazuh-host` side — additive only (new `net1` device);
+                  reversible by removing it from the VM's Hardware tab in Proxmox. Neither side
+                  touched `vmbr1`/`net0` or existing Wazuh container config. No VM snapshot taken —
+                  judged unnecessary for this class of change (hardware/interface assignment, not a
+                  config rewrite), per discussion at the time.
+**Transcript:**  PowerShell `Start-Transcript` covering the `pve01` SSH session (KEX workaround used,
+                  standard). `wazuh-host` session was not logged locally this time — a `script`
+                  attempt was started, decided against mid-session, deferred for a future session.
+
+### What happened
+
+**Architecture check before starting.** `LAB-BLUEPRINT.md`'s Phase C.5 spec (step 3) calls for the
+SPAN destination to be passed through to the **Wazuh/Infra host**, not left on `pve01`'s own host OS —
+this wasn't obvious from this morning's NIC4 bring-up alone, and changes what "install Suricata" means
+(on `wazuh-host`, not `pve01`). Caught and confirmed before proceeding, rather than defaulting to
+installing Suricata directly on `pve01`.
+
+**pve01 side — NIC4 bring-up, confirmed:**
+```
+ip link show eno4
+```
+Confirmed `state DOWN`, `qdisc noop` — matches known gotcha #9 (NICs not administratively up by
+default). Brought it up:
+```
+ip link set eno4 up
+ip link set eno4 promisc on
+```
+Verified: `state UP`, `LOWER_UP` (carrier confirmed, matching the switch-side `connected` status from
+this morning), `PROMISC` present in flags.
+
+**Passthrough method — decided: bridge + virtual NIC, not full PCI passthrough.** Two options were
+considered: (1) true PCI passthrough of `eno4` to `wazuh-host` via `vfio-pci`, same mechanism as the
+`pve-ai` GPU passthrough — requires IOMMU/VT-d, carries real risk of a botched IOMMU group; (2) a
+dedicated Linux bridge on `pve01` containing only `eno4`, with `wazuh-host` given a second virtual NIC
+attached to it — `pve01`'s host technically still owns the physical NIC, but nothing else uses that
+bridge, functioning as a dedicated monitoring path. Chose **option 2** — lower friction, no BIOS/IOMMU
+work, easily reversible, functionally equivalent for Suricata's needs. Matches the pacing rule's
+preference for the lower-friction path absent a specific reason to want the harder one.
+
+**Created `vmbr4` on `pve01`.** Checked current bridge config first (`cat /etc/network/interfaces`,
+`ip link show type bridge`) — three existing bridges (`vmbr1` mgmt/static, `vmbr2` pfSense WAN,
+`vmbr3` pfSense LAN trunk), `eno4` already auto-listed as `iface eno4 inet manual` but unattached.
+Added, via `nano /etc/network/interfaces`:
+```
+auto vmbr4
+iface vmbr4 inet manual
+        bridge-ports eno4
+        bridge-stp off
+        bridge-fd 0
+```
+Matches the existing bridge stanza style exactly; no IP, no VLAN-awareness needed (this bridge only
+ever carries raw mirrored traffic from the switch, not multiple tagged VLANs). Applied live:
+```
+ifreload -a
+```
+Verified: `vmbr4` up and live (inherited `eno4`'s MAC, standard for a single-member bridge); `eno4`
+now shows `master vmbr4`; `vmbr1`/`vmbr2`/`vmbr3` unchanged, same interface numbers, no drift.
+
+**Added a second NIC to `wazuh-host` via the Proxmox web UI.** VM 103 → Hardware → Add → Network
+Device → Bridge `vmbr4`, no VLAN tag, firewall unchecked (consistent with the existing pattern —
+VLAN/segment isolation is handled by pfSense, not per-VM Proxmox firewalling). Came up as `net1`.
+Hotplugged cleanly — no VM reboot needed, so the running Wazuh containers (manager/indexer/dashboard)
+were never disrupted.
+
+**wazuh-host side — new NIC bring-up.** `ip link show` confirmed the new interface as `ens19`
+(Ubuntu predictable naming), `state DOWN`, `qdisc noop`, no IP — same clean starting state as `eno4`
+had on `pve01`. Brought it up the same way:
+```
+sudo ip link set ens19 up
+sudo ip link set ens19 promisc on
+```
+Verified: `UP`, `LOWER_UP`, `PROMISC` all present.
+
+**Persistence decision — deferred, not configured yet.** Current `ip link set` state on both `eno4`
+and `ens19` is runtime-only; a reboot of either host resets it. Decided to let Suricata's own
+install/service own bringing the interface up and setting promiscuous mode going forward, rather than
+hand-writing a second, separate persistence mechanism — avoids two different places configuring the
+same interface. This means today's manual bring-up is effectively just verification/testing ahead of
+the Suricata install, not the final state.
+
+### Outcome
+Full mirrored-traffic path is live end to end, confirmed at every hop:
+**Switch (`Gi1/0/4`, mirroring VLAN 30) → `pve01` `eno4` → `vmbr4` bridge → `wazuh-host` `ens19`.**
+All interfaces up, all promiscuous where needed, no IPs assigned anywhere in the path (correct — this
+is a monitoring-only path, not a routed one). `wazuh-host`'s existing INFRA20 NIC (`ens18`/`net0`) and
+Wazuh container stack were untouched throughout.
+
+This closes step 3 of Phase C.5 (`LAB-BLUEPRINT.md`). Two steps remain:
+- Step 4: install Suricata on `wazuh-host`, bind it to `ens19`, integrate `eve.json` into Wazuh
+  (log-source integration — two-tier: reference drafted, final config reviewed before applying).
+- Step 5: acceptance check — `nmap -sS` from Kali shows up in Wazuh from Suricata *and* triggers a
+  host-based alert, same event, two detection layers.
+
+### Next-steps (logged, not built)
+- Suricata install on `wazuh-host`, interface binding to `ens19`.
+- `eve.json` → Wazuh log source integration (treated as core security logic under the two-tier rule).
+- Once Suricata is confirmed working and bound correctly, revisit the interface-persistence question —
+  confirm Suricata's service actually does bring `ens19` up + promiscuous on its own at boot, rather
+  than assuming it without checking.
+- Session logging note: a `script ~/session.log` capture on `wazuh-host` was started and then
+  abandoned mid-session (no easy local-path delivery back to the Windows `Logs\` folder without
+  additional SSH-server setup on the management PC). Worth deciding a standard method for logging
+  `wazuh-host`-side sessions specifically before the Suricata install session, rather than deciding
+  ad hoc again mid-session.
+- Update `README.md`'s Phase status table — C.5 is in progress (NIC/bridge/passthrough steps done),
+  not "Not started."
+
+### Lessons
+1. **`LAB-BLUEPRINT.md`'s exact wording mattered here** — "pass it through to the Wazuh/Infra host"
+   was easy to read past when the immediate, visible next step (bringing up NIC4 on `pve01`) already
+   felt like progress. Worth explicitly re-checking the blueprint's exact phase steps before starting
+   an install, not just before starting a phase.
+2. **Bridge + virtual NIC is a solid, low-risk substitute for true PCI passthrough when the goal is
+   just "give this VM a dedicated interface," not "this VM must directly own the physical device."**
+   No IOMMU/BIOS work, fully reversible from the Proxmox GUI, and functionally identical for a
+   monitoring-only interface with no IP. Worth remembering as the default choice for future
+   similar needs, reserving true PCI passthrough for cases actually requiring exclusive physical
+   device ownership (like GPU passthrough on `pve-ai`).
+3. **A VM's newly added virtual NIC hotplugs cleanly on this Proxmox/Ubuntu combination** — no
+   reboot was needed for `wazuh-host` to see `net1`/`ens19`, meaning zero Wazuh container downtime
+   for this change. Don't assume a reboot is required for a hotplug NIC add without checking first.
+4. **`Start-Transcript` must be typed as one complete, unbroken line with quotes intact** — a
+   truncated paste (missing the closing quote, or the path split across a wrapped multi-line paste)
+   either leaves PowerShell hanging on a `>>` continuation prompt, or throws a
+   "positional parameter cannot be found" error once the unquoted path's spaces get parsed as
+   separate arguments. Retype/paste the full line as a single unit rather than patching a partial one.
