@@ -1728,3 +1728,143 @@ This closes step 3 of Phase C.5 (`LAB-BLUEPRINT.md`). Two steps remain:
    either leaves PowerShell hanging on a `>>` continuation prompt, or throws a
    "positional parameter cannot be found" error once the unquoted path's spaces get parsed as
    separate arguments. Retype/paste the full line as a single unit rather than patching a partial one.
+
+---
+
+## 2026-09-02 — Phase C.5: Suricata installed, configured, and generating alerts (not yet integrated into Wazuh)
+
+**Phase:**       C.5 (Network Visibility — SPAN + Suricata)
+**Goal:**        Install Suricata on `wazuh-host`, bind it to the mirrored-traffic interface
+                  (`ens19`), confirm it actually captures and alerts on real RANGE30 traffic, then
+                  check whether that data is visible in the Wazuh dashboard — continuing directly
+                  from the NIC/bridge/passthrough work done in the prior session.
+**Rollback:**    All changes this session live on `wazuh-host` only — a new package install
+                  (Suricata + dependencies) and a single-line config edit
+                  (`/etc/suricata/suricata.yaml`, line 662). Fully reversible with `apt remove
+                  suricata` if needed; the config edit only changed one `interface:` value under the
+                  `af-packet:` section, nothing else in the file was touched. No `pve01` or existing
+                  Wazuh container config touched this session.
+**Transcript:**  Not locally logged this session — the `wazuh-host` session-logging method decision
+                  (deferred from the prior session) was raised again and deferred a second time.
+                  Genuinely still open; worth resolving before the next `wazuh-host`-side session.
+
+### What happened
+
+**Suricata installed via the official OISF PPA** (`ppa:oisf/suricata-stable`), the standard
+recommended source for a current Suricata version on Ubuntu 24.04 rather than the older version in
+Ubuntu's default repos:
+```
+sudo add-apt-repository ppa:oisf/suricata-stable
+sudo apt update
+sudo apt install suricata -y
+```
+Installed cleanly: Suricata 8.0.6, a dedicated `suricata` system user/group (UID/GID 110) created
+automatically, systemd service registered and enabled.
+
+**First start attempt failed** — `systemctl status` showed `Active: failed`, hit systemd's restart
+rate limit after 5 rapid failed attempts. Checked the real error via the journal rather than trusting
+the summary line:
+```
+sudo journalctl -u suricata --no-pager | tail -30
+```
+Two distinct problems surfaced:
+1. `E: af-packet: eth0: failed to find interface: No such device` — the default config ships
+   hardcoded to `eth0`, which doesn't exist on this VM (`ens18`/`ens19` are the real names).
+2. `W: detect: No rule files match the pattern /var/lib/suricata/rules/suricata.rules` — no ruleset
+   installed yet; Suricata won't fully start with zero rules loaded.
+
+**Fix 1 — interface binding.** Confirmed via `sudo grep -n "interface:" /etc/suricata/suricata.yaml`
+that line 662 sits under the `af-packet:` section specifically (the enabled capture method, confirmed
+via `suricata --build-info` showing `AF_PACKET support: yes`) — the file has multiple other
+`interface:` references under unused capture methods (pcap, dpdk, pf_ring, netmap) that needed to be
+left alone. Edited only that one line:
+```
+sudo sed -i '662s/interface: eth0/interface: ens19/' /etc/suricata/suricata.yaml
+```
+Verified with `sed -n '660,664p'` — confirmed `interface: ens19` landed correctly, nothing else
+in the surrounding lines changed.
+
+**Fix 2 — rules.** Ran Suricata's own rule-management tool:
+```
+sudo suricata-update
+```
+Defaulted to the **Emerging Threats Open** ruleset (no source configured, sensible default). Pulled
+68,666 total rules, 52,713 enabled after defaults, wrote the compiled set to
+`/var/lib/suricata/rules/suricata.rules` — exactly the path the config was already looking for. The
+tool's own final step (`Testing with suricata -T`) passed automatically before finishing.
+
+**Service started successfully:**
+```
+sudo systemctl restart suricata
+sudo systemctl status suricata --no-pager
+```
+`Active: active (running)`, 4 worker threads plus flow manager/recycler threads
+(`Threads created -> W: 4 FM: 1 FR: 1. Engine started.`), stable, no restart loop.
+
+**Acceptance check — real traffic generated and verified.** Both RANGE30 VMs (Kali, Win11-LTSC-Victim)
+were discovered to be powered off at this point — explains why `eve.json`'s early stats showed only a
+single stray IPv6 packet over several minutes (accurate reflection of an idle segment, not a broken
+pipeline). Started both VMs, then from Kali:
+```
+nmap -sS 10.10.30.100
+```
+Checked `eve.json` afterward on `wazuh-host`:
+```
+sudo grep -c "alert" /var/log/suricata/eve.json    # → 122
+sudo tail -20 /var/log/suricata/eve.json | grep -v '"event_type":"stats"'
+```
+Confirmed real flow entries from `10.10.30.100` (Kali's actual RANGE30 IP), including normal
+background chatter (IPv6 neighbor discovery, Windows service-discovery multicast) alongside the scan
+traffic — proof the full mirrored path (switch → `eno4` → `vmbr4` → `ens19` → Suricata) is capturing
+and parsing real traffic correctly, not just idling.
+
+**Checked the Wazuh dashboard directly** (via Claude in Chrome, screenshot-and-narrate pattern, one
+step at a time) — logged into `https://10.10.20.100/`, Threat Hunting → Events tab. 46 hits in the
+last 24 hours, all attributed to `win11-ltsc-victim`, all built-in Wazuh rule IDs (92217, 92052,
+60608) — Sysmon/host-based alerts only. Searched the query bar for `suricata` directly: **"No results
+match your search criteria."**
+
+### Outcome
+Suricata itself is fully working — installed, correctly bound to the mirrored-traffic interface,
+loaded with a real ruleset, and confirmed generating real alerts (122) against real scan traffic. But
+**none of that data exists inside Wazuh's index yet** — `eve.json` and Wazuh's alert index are still
+two completely separate, unconnected data stores at this point. This is the expected state before the
+"integrate `eve.json` into Wazuh" half of step 4 — not a failure, just the honestly-incomplete state
+to pick up from next time.
+
+### Next-steps (logged, not built)
+- Configure Wazuh's agent (or manager-side log collection, whichever is architecturally correct for a
+  log file local to the manager host itself — needs confirming, since `wazuh-host` runs the Wazuh
+  manager, not just an agent) to read `/var/log/suricata/eve.json` as a new log source.
+- This is core-security-logic/log-source-integration territory under the two-tier rule — reference
+  drafted, final config reviewed and applied by hand, not handed over as a copy-paste block.
+- Once ingestion is confirmed (Suricata alerts visible in Threat Hunting/Discover), re-run the
+  `nmap -sS` acceptance check end-to-end: same scan, confirm it now shows up from **both** Suricata
+  *and* a host-based Sysmon alert on Win11-LTSC-Victim — the actual Phase C.5 step 5 acceptance
+  criteria from `LAB-BLUEPRINT.md`.
+- Still open, raised again this session and deferred a second time: decide a standard session-logging
+  method for `wazuh-host`-side SSH work specifically (the earlier `script ~/session.log` attempt had
+  no easy local-delivery path to the Windows `Logs\` folder). Worth resolving before starting the next
+  `wazuh-host` session rather than re-deciding ad hoc a third time.
+- Update `README.md`'s Phase C.5 row with today's progress (Suricata installed/configured/verified
+  generating alerts; integration into Wazuh still pending).
+
+### Lessons
+1. **A freshly-installed service's default config should never be assumed correct for this
+   environment** — Suricata's out-of-box config assumed `eth0`, a completely generic guess that had
+   nothing to do with this VM's actual interface names. Worth checking a new service's config against
+   real system state before the first start attempt, rather than treating "systemctl start" as a
+   reasonable first move for brand-new software.
+2. **`suricata-update`'s automatic self-test (`suricata -T`) after writing new rules is a genuinely
+   useful built-in checkpoint** — catching a bad ruleset or config before a real service restart is
+   attempted, rather than finding out via a live failure.
+3. **Two VMs being powered off produced a signal (near-zero captured packets) that looked identical,
+   at a glance, to a broken capture pipeline.** Worth checking the obvious/mundane explanation (are the
+   traffic sources even running) before troubleshooting the more complex, more interesting-looking
+   possibility (is the SPAN/bridge/passthrough path broken). The five-minute check of "are the VMs on"
+   would have caught this immediately, and did, once actually checked.
+4. **A working detection tool and an integrated detection tool are two different states, and it's
+   easy to blur them together.** Suricata alerting correctly on disk felt like "done" in the moment,
+   but the dashboard check (empty search for "suricata") was the actual, honest measure of whether
+   step 4 was complete — a good reminder to verify the end-user-visible outcome, not just the
+   component-level success, before calling a step finished.
