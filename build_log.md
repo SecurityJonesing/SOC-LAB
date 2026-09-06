@@ -2051,3 +2051,331 @@ Real, substantial progress with one clear remaining blocker:
    worthwhile 30-second check.** `local_rules.xml` sits under `/var/ossec/etc/rules/`, mapped to the
    `wazuh_etc` named volume, so it survives recreation. Confirming this before running
    `--force-recreate` turned a nervous operation into a routine one.
+
+---
+
+## Phase C.5 — Suricata stats blocker resolved; east-west visibility gap found and fixed (2026-09-05, evening into 2026-09-06 UTC)
+
+### Starting position
+Picked up with Suricata alerts still absent from the Wazuh dashboard. The working assumption
+carried in from the prior session was that the `Too many fields for JSON decoder` error was
+still active, and that the Suricata side fix (`enabled: no` on the eve-log `stats` type) had
+somehow not taken effect.
+
+### Part 1 — The stats blocker was already fixed; the verification method was wrong
+
+Batched read only checks on `wazuh-host`:
+
+```
+sudo tail -n 500 /var/log/suricata/eve.json | jq -r '.event_type' | sort | uniq -c | sort -rn
+```
+Returned `488 stats`, `12 flow`. On its face this looked like the fix had failed.
+
+```
+sudo grep -A 3 -- "- stats:" /etc/suricata/suricata.yaml
+```
+Returned two matches. The first, inside the eve-log `types:` list, correctly showed
+`enabled: no`. The second was the separate global stats module writing to `stats.log`,
+showing `enabled: yes`, which is correct and unrelated.
+
+```
+sudo grep -n "eve-log:" /etc/suricata/suricata.yaml
+```
+Returned line 98 only. One output block, no duplicate competing writer.
+
+```
+ps aux | grep suricata | grep -v grep
+```
+Confirmed a single process launched with `-c /etc/suricata/suricata.yaml`, the exact file
+edited. No stale config copy elsewhere.
+
+```
+sudo systemctl status suricata --no-pager | grep -i "active\|since"
+```
+`Active: active (running) since Sat 2026-09-05 23:27:51 UTC`.
+
+The decisive check paired timestamp with event type rather than counting types alone:
+
+```
+sudo tail -n 500 /var/log/suricata/eve.json | jq -r '"\(.timestamp) \(.event_type)"' | tail -n 20
+```
+
+Output showed `stats` entries ending at `23:27:50`, one second before the service restart at
+`23:27:51`, with zero `stats` entries after it. Every post restart entry was `flow`.
+
+**The fix had worked correctly the entire time.** `eve.json` is append only and had accumulated
+a stats event every 8 seconds for hours before the restart, so any sample taken by line count
+was dominated by pre restart history regardless of current behaviour.
+
+A follow up `grep` for `Too many fields` inside the manager container returned nothing, though
+this was noted as weak evidence on its own since `ossec.log` had rotated at `00:00:10` and held
+only about nine minutes of history. The strong evidence is upstream: the oversized stats events
+that overflowed the decoder have stopped being written, so the trigger no longer exists.
+
+### Part 2 — Testing the alert path exposed a much larger problem
+
+With the decoder issue cleared, ran a fresh `nmap -sS 10.10.30.100` from Kali and checked for
+resulting alerts.
+
+```
+sudo tail -n 200 /var/log/suricata/eve.json | jq -r 'select(.event_type=="alert") | ...'
+```
+Nothing. Then checked whether Suricata had seen the traffic at all:
+
+```
+sudo jq -r 'select(.event_type=="flow") | "\(.timestamp) \(.src_ip) -> \(.dest_ip) \(.proto)"' \
+  /var/log/suricata/eve.json | tail -n 10
+```
+
+Most recent flow was `00:09:40` UTC. The scan ran at `00:23` UTC. Every visible flow was IPv6
+link local or multicast background noise. **Nothing between Kali (10.10.30.101) and the victim
+(10.10.30.100) appeared at all.** This was not a detection rule gap. Suricata was not receiving
+the traffic.
+
+Counter evidence confirmed it:
+
+```
+ip -s link show ens19
+```
+1,471 packets RX cumulative.
+
+```
+sudo grep -E "decoder.pkts|capture.kernel_packets|capture.kernel_drops" \
+  /var/log/suricata/stats.log | tail -n 12
+```
+`decoder.pkts` totalled **19** across roughly an hour of runtime, with zero drops. A 1,000 port
+SYN scan alone sends on the order of a thousand packets. The counter had barely moved.
+
+### Part 3 — Root cause
+
+Hypothesis formed and then tested rather than assumed: Kali and Win11 both live on `pve01`,
+both attached to `vmbr3` with VLAN tag 30. A Linux bridge switches frames between two VMs on
+the same bridge internally, in software, on the host. Those frames never egress NIC3 to the
+Cisco switch. A switch SPAN session can only mirror traffic that reaches the switch.
+
+Live capture on the SPAN destination while running the scan twice:
+
+```
+sudo tcpdump -i ens19 -n "host 10.10.30.101 and (arp or tcp)"
+```
+Result: two ARP requests captured, zero TCP packets, across two complete nmap runs.
+
+This is the signature of the hypothesis. ARP is broadcast, so the bridge floods it out every
+port including the trunk, where the SPAN catches it. The subsequent TCP SYNs are unicast and
+get switched directly between the two taps inside `pve01`.
+
+Scope of the blindness was then tested beyond the same VLAN case, using Wazuh agent traffic
+that crosses RANGE30 to INFRA20 and is explicitly permitted:
+
+```
+sudo tcpdump -i ens19 -n "host 10.10.20.100 and port 1514" -c 20
+```
+**Zero packets captured.** Because pfSense is itself a VM on `vmbr3`, inter VLAN traffic is
+also bridge local end to end. The physical SPAN was effectively blind to all east west traffic
+in the lab, not merely same VLAN traffic.
+
+Nothing that had been built was misconfigured. The switch SPAN session, `eno4`, `vmbr4`,
+`ens19`, promiscuous mode, Suricata, the bind mount and the `<localfile>` block were all
+correct. The mirror was simply positioned to watch a path the traffic does not take.
+
+### Part 4 — Decision
+
+Options weighed:
+- Move Kali to a spare physical host so its traffic crosses the wire. Rejected: fixes only
+  today's specific case and leaves the same blind spot for every future RANGE30 VM, of which
+  Phase C.6 alone adds `dc01`, `win11-ws02` and `linux-victim`.
+- Force traffic to the switch via SR-IOV, PVLAN/VEPA hairpin, or per VLAN bridges on separate
+  NICs. All rejected on hardware or platform grounds, and none solve the same VLAN case.
+- Mirror at the layer where the switching actually happens, using `tc mirred` on the VM tap
+  interfaces. Selected.
+
+Recorded reasoning: this is not a workaround for a broken design. Every hypervisor switches
+frames between VMs on the same virtual switch, and this is precisely why VMware distributed
+switch port mirroring and AWS VPC Traffic Mirroring exist as products. `tc mirred` is the
+correct architecture for monitoring virtualised traffic.
+
+### Part 5 — Discovery before configuration
+
+Rollback path stated before any change, per standing rule: `tc` filters live in kernel memory
+only, nothing is written to disk, `vmbr1`/`vmbr3`/the pfSense trunk are untouched. Recovery is
+`tc qdisc del`, or a reboot of `pve01`, with iDRAC at 192.168.0.100 as physical fallback. Worst
+realistic case is duplicated traffic causing load, not a lockout.
+
+On `pve01`:
+
+```
+ip -br link show | grep -E "^tap|^fwln|^fwpr"
+brctl show
+qm config 100 | grep net; qm config 101 | grep net; qm config 103 | grep net
+```
+
+Findings:
+- No `fwln`/`fwpr` interfaces exist, so Proxmox per NIC firewall is off and taps attach directly
+  to bridges with no intermediate hop.
+- `tap100i0` = Kali (VM 100), `vmbr3` tag 30, MAC `BC:24:11:BE:F6:C6`
+- `tap101i0` = Win11 LTSC Victim (VM 101), `vmbr3` tag 30, MAC `BC:24:11:5B:13:31`
+- `tap103i0` = wazuh-host NIC1, `vmbr3` tag 20
+- `tap103i1` = wazuh-host NIC2, member of `vmbr4`, MAC `BC:24:11:4B:17:29`
+- `tap102i0`/`tap102i1` = pfSense WAN on `vmbr2`, LAN trunk on `vmbr3`
+
+VLAN tagging behaviour verified rather than assumed:
+
+```
+bridge vlan show
+timeout 15 tcpdump -i tap100i0 -n -e -c 10
+```
+
+`tap100i0` and `tap101i0` both show `30 PVID Egress Untagged`, and the capture showed no VLAN
+tag in any frame. Proxmox strips the tag at the tap, so mirrored frames arrive at Suricata
+untagged exactly as the physical SPAN delivered them. **No Suricata configuration change was
+required.** The capture also showed Kali ICMP to the victim MAC plus Cisco STP frames arriving
+from the switch, confirming a healthy trunk.
+
+### Part 6 — Configuration applied
+
+Two design decisions recorded:
+- **Ingress only on each tap.** On a tap, ingress means traffic from the VM into the host. Since
+  every packet originates from some VM, ingress only on each tap captures every packet exactly
+  once. Mirroring both directions would duplicate every VM to VM packet and confuse Suricata's
+  flow tracking.
+- **Mirror to `tap103i1` directly, not to `vmbr4`.** Injecting copies into the bridge would make
+  it learn RANGE30 MAC addresses it has no business knowing. Targeting the tap delivers frames
+  into `ens19` and leaves the bridge alone.
+
+On `pve01`, as root:
+
+```
+tc qdisc add dev tap100i0 clsact
+tc filter add dev tap100i0 ingress protocol all matchall action mirred egress mirror dev tap103i1
+tc qdisc add dev tap101i0 clsact
+tc filter add dev tap101i0 ingress protocol all matchall action mirred egress mirror dev tap103i1
+```
+
+`clsact` provides the ingress attachment point and changes nothing about traffic flow on its
+own. `matchall` matches every packet unconditionally. `mirred ... mirror` copies the packet and
+allows the original to continue; `redirect` would divert the original and break the VM's
+networking, so the keyword matters.
+
+The second `qdisc add` returned `Error: Exclusivity flag on, cannot modify`, meaning a `clsact`
+qdisc already existed on that interface. Verified with `tc filter show dev tap101i0 ingress`
+rather than assuming, and found the intended mirror filter already correctly in place and
+identical to `tap100i0`'s. Live state was correct, so no further action taken.
+
+### Part 7 — Verification, end to end
+
+With a continuous ping running from Kali, on `wazuh-host`:
+
+```
+sudo timeout 20 tcpdump -i ens19 -n icmp
+```
+Captured 13 ICMP echo requests from `10.10.30.101` to `10.10.30.100`, one per second, zero
+drops. **The east west traffic the physical SPAN could never see was now arriving.**
+
+No echo replies appeared. Rather than assume Windows Firewall was the cause, tested with
+traffic known to be answered:
+
+```
+sudo timeout 25 tcpdump -i ens19 -n "host 10.10.30.100 and port 3389"
+```
+Captured the full exchange: `Flags [S]` from Kali, `Flags [S.]` (SYN ACK) back from
+`10.10.30.100`, then `Flags [R]` from Kali tearing down the half open connection. The SYN ACK
+proves `tap101i0`'s mirror delivers return traffic, and confirms the missing ICMP replies were
+Windows Firewall dropping pings rather than a mirror fault.
+
+Volume confirmed independently:
+```
+sudo grep -E "decoder.pkts|capture.kernel_drops" /var/log/suricata/stats.log | tail -n 4
+```
+`decoder.pkts` at **3,368**, up from 19 earlier in the session.
+
+Alert generation confirmed from mirrored traffic:
+```
+sudo jq -r 'select(.event_type=="alert") | ...' /var/log/suricata/eve.json | tail -n 20
+```
+Returned `2026-09-06T01:39:52` `ET INFO Possible Kali Linux hostname in DHCP Request Packet`
+from `10.10.30.101` to `10.10.30.1`. Kali's real RANGE30 address, after the `tc` work, via the
+hypervisor mirror. An identical signature from 2026-09-03 sits above it in the log, that one
+having arrived via the old physical SPAN.
+
+Dashboard confirmed via Claude in Chrome (pointer/narration mode, Threat Hunting → Events, last
+24 hours):
+
+`Sep 5, 2026 @ 20:39:53.113` | `wazuh.manager` | `Suricata: Alert - ET INFO Possible Kali Linux
+hostname in DHCP Request Packet` | rule.level 3 | rule.id **86601**
+
+`agent.name` is `wazuh.manager` rather than `win11-ltsc-victim`, as expected, since the manager
+reads `eve.json` directly rather than receiving it from an agent. Rule 86601 is Wazuh's built in
+Suricata rule, confirming the JSON is being decoded rather than merely ingested as text. The
+local timestamp matches the `01:39:52` UTC entry found in `eve.json`, confirming the same event
+at both ends.
+
+**Full chain proven:** VM tap → `tc` mirror → `tap103i1` → `ens19` → Suricata → `eve.json` →
+bind mount → Wazuh manager → indexer → dashboard.
+
+No alert fired for the `nmap` scan itself. Not a pipeline fault: ET Open is conservative about
+port scan signatures. Suricata processed every packet and simply did not consider them alert
+worthy.
+
+### Outcome
+- Suricata `stats` flood: resolved, and confirmed to have been resolved since the prior session
+- East west visibility gap: found, root caused, and fixed at the hypervisor layer
+- Bidirectional mirroring on both RANGE30 VM taps: verified live
+- Suricata alert reaching the Wazuh dashboard: verified live
+- **Phase C.5 functionally complete**, with persistence outstanding
+
+### Next steps (logged, not built)
+- **Persistence for the `tc` mirrors — the remaining blocker for calling C.5 fully done.**
+  Current state is kernel memory only. Three distinct failure modes: rebooting `pve01` clears
+  all `tc` state; restarting Kali or Win11 destroys and recreates that VM's tap, silently
+  dropping that VM's mirror while the other continues working; restarting `wazuh-host`
+  recreates `tap103i1`, leaving both filters pointing at an interface that no longer exists
+  (behaviour in this specific case not verified). Options evaluated: Proxmox hookscripts
+  (preferred, since they re-apply on both VM start and host boot, matching the actual failure
+  modes), a systemd service on `pve01` (simpler, but only fires at host boot and so does not
+  cover VM restarts), or a udev rule (most automatic in principle, but tap creation timing is
+  racy and would need careful testing). Hookscripts require the `snippets` content type enabled
+  on Proxmox storage, which is not on by default and needs checking with
+  `pvesm status --content snippets` before proceeding. Note a broken hookscript can prevent a VM
+  from starting, so test on one VM before applying to others.
+- Each new RANGE30 VM added in Phase C.6 (`dc01`, `win11-ws02`, `linux-victim`) will need its own
+  mirror applied. Worth building the persistence mechanism to make this a one line addition.
+- `capture.kernel_drops` does not appear in `stats.log` at all, only `capture.kernel_packets`.
+  Likely means zero drops, since Suricata commonly omits zero valued counters, but this was not
+  verified. `capture.kernel_packets` (3,586) and `decoder.pkts` (3,368) track each other closely,
+  which is consistent with little or no loss. Worth confirming before relying on the mirror under
+  heavier load.
+- Still open, fourth session running: session logging method for `wazuh-host` SSH work.
+- Still open: Wazuh indexer password rotation, and the `wazuh-host` account password rotation.
+
+### Lessons
+1. **For an append only log, filter by time before drawing any conclusion about current
+   behaviour.** A line count tells you what a file contains, not what a service is doing now.
+   `tail -n 500` on a file that had been accumulating an entry every 8 seconds for hours
+   returned a sample that was almost entirely pre restart history, which produced a confident
+   false negative and cost most of a session. Pairing timestamp with event type resolved it in
+   a single command. This is the second time in this build that a verification method, rather
+   than the underlying change, was the actual problem.
+2. **A physical switch SPAN cannot see traffic between VMs on the same host.** The bridge
+   switches those frames in software and they never reach the wire. Broadcast traffic still
+   appears, which makes the failure look like a working mirror with nothing interesting on it.
+   Seeing ARP but no TCP for the same conversation is the diagnostic signature.
+3. **Because pfSense runs as a VM on the same bridge, inter VLAN traffic is bridge local too.**
+   The blind spot was not limited to same VLAN traffic. Testing a second, differently shaped
+   case (Wazuh agent traffic crossing RANGE30 to INFRA20) is what established the real scope,
+   and changed the fix from a point solution to an architectural one.
+4. **Mirror ingress only, on each tap, to avoid duplication.** Every packet is ingress on exactly
+   one tap, so ingress only across all taps captures everything once. Mirroring both directions
+   double counts every VM to VM packet.
+5. **Mirror to the destination tap, not to the destination bridge.** Injecting into `vmbr4` would
+   teach the bridge MAC addresses from a VLAN it should know nothing about.
+6. **A failed `qdisc add` does not mean the filter beneath it is absent.** `Exclusivity flag on`
+   only reports that a qdisc already exists. Checking `tc filter show` found the intended mirror
+   already correctly configured. Verifying live state beat inferring it from a command's exit
+   behaviour, again.
+7. **Absence of a counter is not the same as a counter reading zero.** `capture.kernel_drops`
+   simply was not present in the stats output. Recorded as an open question rather than reported
+   as zero drops.
+8. **The physical SPAN work was not wasted.** The dedicated NIC, isolated bridge, promiscuous
+   interfaces, Suricata binding and the entire downstream ingestion path are all still in use.
+   Only the source of the mirrored copy changed. The switch SPAN also remains valid for north
+   south traffic that genuinely crosses the wire.
