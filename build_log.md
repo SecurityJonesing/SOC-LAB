@@ -1868,3 +1868,186 @@ to pick up from next time.
    but the dashboard check (empty search for "suricata") was the actual, honest measure of whether
    step 4 was complete — a good reminder to verify the end-user-visible outcome, not just the
    component-level success, before calling a step finished.
+
+---
+
+## 2026-09-05 — Phase C.5: eve.json mounted and read by Wazuh; blocked on JSON decoder field limit
+
+**Phase:**       C.5 (Network Visibility — SPAN + Suricata)
+**Goal:**        Get Suricata's `eve.json` output ingested into Wazuh so network alerts appear in the
+                  dashboard alongside the existing host-based Sysmon alerts. Continuing from the prior
+                  session, where Suricata was confirmed running and generating alerts locally but no
+                  Suricata data existed in the Wazuh index.
+**Rollback:**    Two config changes on `wazuh-host`, both additive and reversible:
+                  (1) one new bind-mount line in `~/wazuh-docker/single-node/docker-compose.yml`;
+                  (2) one new `<localfile>` block in
+                  `~/wazuh-docker/single-node/config/wazuh_cluster/wazuh_manager.conf`.
+                  Plus one line added to `/etc/suricata/suricata.yaml` (`enabled: no` under the
+                  eve-log `- stats:` type). All three are single-line/small-block edits, removable by
+                  deleting the added lines and restarting the relevant service. Verified before
+                  recreating the Wazuh container that all custom rules live in the mounted
+                  `wazuh_etc` volume and therefore survive container recreation.
+**Transcript:**  Not locally logged. The `wazuh-host` session-logging method decision remains open
+                  for a third session running.
+
+### What happened
+
+**Confirmed the gap first.** Before changing anything, checked the Wazuh manager container's mount
+list (`docker inspect ... --format '{{ range .Mounts }}...'`) and confirmed no mount existed for
+`/var/log/suricata`. The container genuinely could not see Suricata's log file, which explained the
+empty dashboard search from the prior session. This also revealed that `ossec.conf` is not edited
+inside the container at all — it is bind-mounted from
+`~/wazuh-docker/single-node/config/wazuh_cluster/wazuh_manager.conf` on the host.
+
+**Change 1 — bind-mounted the Suricata log directory into the manager container.** Added to the
+`wazuh.manager` service's `volumes:` list in `docker-compose.yml`, after the existing
+`wazuh_manager.conf` line:
+```
+      - /var/log/suricata:/var/log/suricata:ro
+```
+Mounted read-only (`:ro`) deliberately — Wazuh only needs to read these logs and should not be able
+to modify or delete Suricata's data. Applied with
+`docker compose -f ... up -d wazuh.manager` (reported "Started", i.e. genuinely recreated), then
+verified from inside the container with `docker exec ... ls -la /var/log/suricata/` — `eve.json`
+visible at ~271 MB, actively growing.
+
+**Change 2 — told Wazuh to read the file.** Added a `<localfile>` block to `wazuh_manager.conf`,
+immediately before the closing `</ossec_config>` tag:
+```
+  <localfile>
+    <log_format>json</log_format>
+    <location>/var/log/suricata/eve.json</location>
+  </localfile>
+```
+
+**Significant gotcha discovered here — config changes need `--force-recreate`, not a restart.**
+After saving the `ossec.conf` edit, neither `docker compose up -d` (reported "Running", meaning
+Docker saw no structural change and left the container alone) nor `docker restart` caused Wazuh to
+pick up the new block. Diagnosed by comparing the two files from inside the container:
+```
+sudo docker exec single-node-wazuh.manager-1 ls -la /var/ossec/etc/ossec.conf /wazuh-config-mount/etc/ossec.conf
+```
+which showed the mounted copy at 8856 bytes / 21:42 (the edit) but Wazuh's working copy at
+8741 bytes / 21:20 (stale, pre-edit). This Wazuh image copies the mounted config into its working
+location only during **fresh container creation**, not on restart. The fix:
+```
+sudo docker compose -f ~/wazuh-docker/single-node/docker-compose.yml up -d --force-recreate wazuh.manager
+```
+Before running that, verified custom rules were safe by confirming `local_rules.xml` (3022 bytes,
+dated Aug 18) lives under `/var/ossec/etc/rules/`, which maps to the `wazuh_etc` named volume and
+therefore survives recreation.
+
+**Confirmed Wazuh is reading the file.** After the recreate:
+```
+sudo docker exec single-node-wazuh.manager-1 grep -i "suricata\|eve.json" /var/ossec/logs/ossec.log
+```
+returned `wazuh-logcollector: INFO: (1950): Analyzing file: '/var/log/suricata/eve.json'.` — explicit
+confirmation the ingestion path is live.
+
+**Acceptance test run, and it failed.** Ran `nmap -sS 10.10.30.100` from Kali (found the victim up,
+port 3389/RDP open, 999 ports filtered — a healthy result), then searched the Wazuh dashboard's
+Threat Hunting → Events for `suricata`. Still **"No results match your search criteria."**
+
+**Root cause found in Wazuh's own log:**
+```
+wazuh-analysisd: ERROR: Too many fields for JSON decoder.
+```
+repeated continuously. Wazuh reads `eve.json` successfully, but its JSON decoder has a hard limit on
+the number of fields in a single log entry. Suricata's `stats` events — the enormous entries packed
+with hundreds of performance counters, seen repeatedly in this build's earlier sessions — exceed that
+limit and are rejected outright. Nothing from the file reaches the alert pipeline.
+
+**Attempted fix — disable stats output inside eve-log. Did not work, unresolved.** Decided to stop
+Suricata writing stats into `eve.json` rather than raise Wazuh's limit, since stats are internal
+performance counters with no security value. Located the correct setting by first ruling out the
+*global* `stats:` block at line 473 (a different setting, controlling the standalone `stats.log`
+file — and per a Suricata forum thread found during this session, setting `enabled: no` there causes
+Suricata to fail to start entirely). The correct target was the `- stats:` entry nested inside
+`eve-log`'s `types:` list at **line 368**. Added:
+```
+            enabled: no
+```
+directly beneath `- stats:`, at matching 12-space indentation. Restarted with
+`sudo systemctl restart suricata` (plain restart is sufficient for Suricata, unlike the Wazuh
+container).
+
+**Verification showed the change had no effect.** Everything checkable checked out, and the
+behaviour still contradicts the config:
+- Suricata's own documentation confirms `enabled:` is valid for an eve-log type entry
+  ("Enable/disable this logger. Default: enabled.")
+- The edit is saved correctly at line 368/369 with correct indentation (re-verified with `sed`)
+- Suricata genuinely restarted at 23:27:51 (`systemctl status`, and a clean `journalctl` showing
+  engine start with no config warnings or errors)
+- Only **one** `eve-log` block exists in the file and only one thing writes to `eve.json`
+  (`grep -n "^  - eve-log:\|filename: eve.json"` returned lines 98 and 101 only) — ruling out a
+  second competing output block
+- Yet `sudo tail -100 /var/log/suricata/eve.json | grep -c '"event_type":"stats"'` returned **96**,
+  and timestamps on the newest entries (23:40) are well after the restart
+
+**No supported explanation found.** Stopped here rather than continuing to speculate.
+
+### Outcome
+Real, substantial progress with one clear remaining blocker:
+- ✅ Switch SPAN session mirroring RANGE30 (prior session)
+- ✅ Full traffic path live: switch → `eno4` → `vmbr4` → `ens19` (prior session)
+- ✅ Suricata installed, bound to `ens19`, generating real alerts (prior session)
+- ✅ `/var/log/suricata` bind-mounted into the Wazuh manager container **(this session)**
+- ✅ `<localfile>` block added; Wazuh confirmed actively reading `eve.json` **(this session)**
+- ❌ **Blocked:** Suricata alerts still not reaching the dashboard, due to
+  `Too many fields for JSON decoder` on oversized stats entries. Attempted Suricata-side fix did not
+  take effect; cause unresolved.
+
+### Next-steps (logged, not built)
+- **First thing next session:** determine whether the newest `eve.json` entries are *still* stats or
+  now a mix. This session only extracted timestamps, not event types, from the last few lines — so it
+  is not actually established whether stats volume dropped at all after the config change. This
+  changes what problem is being solved and should be settled before further troubleshooting.
+- **Alternative approach worth considering first, may be the faster path:** filter on the **Wazuh**
+  side rather than the Suricata side. Wazuh supports ignoring log entries matching a pattern, which
+  would sidestep the Suricata config problem entirely rather than continuing to fight it.
+- If continuing the Suricata-side approach: investigate whether this specific Suricata 8.0.6 build
+  honours `enabled:` on the eve-log `stats` type, or whether the entry must instead be commented out
+  entirely to disable it. Verify against version-specific documentation, not general docs.
+- Still open, third session running: decide a session-logging method for `wazuh-host`-side SSH work.
+- **New open item (raised this session):** the Wazuh `INDEXER_PASSWORD` appears in plaintext in
+  `~/wazuh-docker/single-node/docker-compose.yml`. Confirmed **not** a git exposure — that file is an
+  uncommitted local modification (`git status` shows ` M`) in a clone of the upstream
+  `wazuh/wazuh-docker` repo, with `origin` pointing at the vendor's GitHub, entirely outside the
+  `SOC-LAB` repo. No path to the public portfolio repo exists. Rotation was agreed as hygiene since
+  the value was displayed once in a chat session; deferred as its own dedicated task because per this
+  log's earlier entries it requires editing the `internal_users.yml` hash and applying it via
+  `securityadmin.sh` inside the indexer container, which has historically involved real friction.
+  Should be handled alongside the still-open `wazuh-host` account password rotation.
+
+### Lessons
+1. **A Docker container config change may need `--force-recreate`, not a restart.** This Wazuh image
+   copies its mounted `ossec.conf` into its working location only when a container is freshly built.
+   `docker restart` and `docker compose up -d` both left the stale copy in place, with no error
+   anywhere. The reliable diagnostic is comparing byte size and modification time of the mounted file
+   versus the working file from inside the container — a stale working copy is immediately obvious
+   that way and invisible otherwise. Expect this pattern for **every** future `ossec.conf` change in
+   this deployment.
+2. **Wazuh's JSON decoder has a hard field-count limit that oversized log entries silently blow
+   past.** The failure mode is not a missing file or a permissions problem — Wazuh reads the file
+   perfectly and then discards its contents. Worth checking `ossec.log` for decoder errors early when
+   a new JSON log source produces zero alerts despite confirmed ingestion.
+3. **Two similarly-named config sections can control completely different things.** Suricata has a
+   global `stats:` block (line 473, controls `stats.log`) and a separate `stats` entry nested inside
+   `eve-log`'s `types:` list (line 368, controls stats inside `eve.json`). Editing the wrong one would
+   have prevented Suricata from starting at all, per a documented case found while researching this.
+   Confirming *which* section a setting belongs to before editing was the thing that avoided that.
+4. **Reading line numbers from a `sed` slice requires converting back to the real file.** When
+   `sed -n '96,470p' file | grep -n pattern` reports a match, that number counts from the start of the
+   slice, not the file. Real line = starting line + reported number − 1 (minus one because the
+   starting line is itself line 1 of the slice). Getting this wrong sends you editing the wrong part
+   of the file.
+5. **Assumptions cost real time in this session, twice.** Misreading Suricata's internal `uptime`
+   counter as process runtime led to a wrong conclusion that a restart had silently failed; assuming
+   the eve-log section's structure led to searching the wrong line ranges. Both were avoidable by
+   checking rather than inferring. A standing rule was added as a result: verify against the live
+   system or actual documentation, and say plainly when something cannot be verified rather than
+   filling the gap with a plausible-sounding guess.
+6. **Verifying that custom rules live in a mounted volume before recreating a container is a
+   worthwhile 30-second check.** `local_rules.xml` sits under `/var/ossec/etc/rules/`, mapped to the
+   `wazuh_etc` named volume, so it survives recreation. Confirming this before running
+   `--force-recreate` turned a nervous operation into a routine one.
