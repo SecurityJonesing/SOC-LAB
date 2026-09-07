@@ -1,0 +1,200 @@
+=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2026.07.17 19:55:21 =~=~=~=~=~=~=~=~=~=~=~=
+
+Jul 17 19:55:28.732: %USB_CONSOLE-6-MEDIA_USB: Console media-type is USB.
+
+
+         --- System Configuration Dialog ---
+
+Enable secret warning
+----------------------------------
+In order to access the device manager, an enable secret is required
+If you enter the initial configuration dialog, you will be prompted for the enable secret
+If you choose not to enter the intial configuration dialog, or if you exit setup without setting the enable secret,
+please set an enable secret using the following CLI in configuration mode-
+enable secret 0 <cleartext password>
+----------------------------------
+Would you like to enter the initial configuration dialog? [yes/no]: 
+% Please answer 'yes' or 'no'.
+Would you like to enter the initial configuration dialog? [yes/no]: n
+Switch>enable
+Switch#
+Jul 17 20:05:20.569: %PNP-6-PNP_SAVING_TECH_SUMMARY: Saving PnP tech summary (/pnp-tech/pnp-tech-discovery-summary)... Please wait. Do not interrupt.
+Jul 17 20:05:22.652: %PNP-6-PNP_SUDI_UPDATE: Device SUDI [PID:WS-C2960X-48FPS-L,SN:FJC2317W0FC] identified
+Switch#
+Switch#
+Jul 17 20:06:09.401: %PNP-6-PNP_TECH_SUMMARY_SAVED_WITH_ALARM: PnP tech summary (/pnp-tech/pnp-tech-discovery-summary) saved with alarm (1/3) (elapsed time: 49 seconds).
+Jul 17 20:06:09.401: %PNP-6-PNP_DISCOVERY_STOPPED: PnP Discovery stopped (Config Wizard)
+Switch#
+Switch#show interface status
+
+Port      Name               Status       Vlan       Duplex  Speed Type 
+Gi1/0/1                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/2                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/3                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/4                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/5                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/6                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/7                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/8                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/9                      notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/10                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/11                     notconnect   1            auto   auto 10/100/1000BaseTX
+ --More--         
+Port      Name               Status       Vlan       Duplex  Speed Type 
+Gi1/0/12                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/13                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/14                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/15                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/16                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/17                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/18                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/19                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/20                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/21                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/22                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/23                     notconnect   1            auto   auto 10/100/1000BaseTX
+ --More--         
+Port      Name               Status       Vlan       Duplex  Speed Type 
+Gi1/0/24                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/25                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/26                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/27                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/28                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/29                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/30                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/31                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/32                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/33                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/34                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/35                     notconnect   1            auto   auto 10/100/1000BaseTX
+ --More--         
+Port      Name               Status       Vlan       Duplex  Speed Type 
+Gi1/0/36                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/37                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/38                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/39                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/40                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/41                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/42                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/43                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/44                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/45                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/46                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/47                     notconnect   1            auto   auto 10/100/1000BaseTX
+ --More--         
+Port      Name               Status       Vlan       Duplex  Speed Type 
+Gi1/0/48                     notconnect   1            auto   auto 10/100/1000BaseTX
+Gi1/0/49                     err-disabled 1            auto   auto unknown
+Gi1/0/50                     err-disabled 1            auto   auto unknown
+Gi1/0/51                     notconnect   1            auto   auto Not Present
+Gi1/0/52                     notconnect   1            auto   auto 1000BaseSX SFP
+Fa0                          notconnect   routed       auto   auto 10/100BaseTX
+Switch#write erase
+Erasing the nvram filesystem will remove all configuration files! Continue? [confirm]
+[OK]
+Erase of nvram: complete
+Switch#
+Jul 17 20:09:34.118: %SYS-7-NV_BLOCK_INIT: Initialized the geometry of nvram
+Switch#reload
+Proceed with reload? [confirm]n
+Switch#C:\Users\micha\SOC-Lab\Updated 7-16-2026\logs\switch-&Y&M&D-&T.log
+        ^
+% Invalid input detected at '^' marker.
+
+Switch#
+Switch#
+Switch#         --- System Configuration Dialog ---
+                ^
+% Invalid input detected at '^' marker.
+
+Switch#
+Switch#Enable secret warning
+              ^
+% Invalid input detected at '^' marker.
+
+Switch#----------------------------------
+Translating "----------------------------------"...domain server (255.255.255.255)
+% Unknown command or computer name, or unable to find computer address
+Switch#In order to access the device manager, an enable secret is required
+        ^
+% Invalid input detected at '^' marker.
+
+Switch#If you enter the initial configuration dialog, you will be prompted fo$r the initial configuration dialog, you will be prompted for          the enabial configuration dialog, you will be prompted for the enab                   uration dialog, you will be prompted for the enab                             alog, you will be prompted for the enab                                       will be prompted for the enab                                                 ompted for the enab                                                            the enab                                                                                                                                                             le secrle secre         t
+If you enter the initial configuration dialog, you will be prompted for the enab   ^                                                                         le secr
+et
+
+% Invalid input detected at '^' marker.
+
+Switch#If you choose not to enter the intial configuration dialog, or if you $se not to enter the intial configuration dialog, or if you e         xit setupenter the intial configuration dialog, or if you exit setup                   intial configuration dialog, or if you exit setup                             figuration dialog, or if you exit setup                                        dialog, or if you exit setup                                                 r if you exit setup                                                           xit setup                                                                                                                                                               withouwithout          setting without setting t         he enablewithout setting the enable          secret,
+If you choose not to enter the intial configuration dialog, or if you exit setup   ^                                                                          withou
+t setting the enable secret,
+
+% Invalid input detected at '^' marker.
+
+Switch#please set an enable secret using the following CLI in configuration m$an enable secret using the following CLI in configuration mo         de-
+please set an enable secret using the following CLI in configuration mode-
+ ^
+% Invalid input detected at '^' marker.
+
+Switch#enable secret 0 <cleartext password>
+              ^
+% Invalid input detected at '^' marker.
+
+Switch#----------------------------------
+Translating "----------------------------------"...domain server (255.255.255.255)
+% Unknown command or computer name, or unable to find computer address
+Switch#Would you like to enter the initial configuration dialog?
+% Unrecognized command
+Switch#Would you like to enter the initial configuration dialog [yes/no]:
+        ^
+% Invalid input detected at '^' marker.
+
+Switch#% Please answer 'yes' or 'no'.
+       ^
+% Invalid input detected at '^' marker.
+
+Switch#Would you like to enter the initial configuration dialog?
+% Unrecognized command
+Switch#Would you like to enter the initial configuration dialog [yes/no]: n
+        ^
+% Invalid input detected at '^' marker.
+
+Switch#Switch>enable
+% Unknown command or computer name, or unable to find computer address
+Switch#Switch#
+% Unknown command or computer name, or unable to find computer address
+Switch#Jul 17 20:05:20.569: %PNP-6-PNP_SAVING_TECH_SUMMARY: Saving PnP tech s$5:20.569: %PNP-6-PNP_SAVING_TECH_SUMMARY: Saving PnP tech su         mmary (/p%PNP-6-PNP_SAVING_TECH_SUMMARY: Saving PnP tech summary (/p                   _SAVING_TECH_SUMMARY: Saving PnP tech summary (/p                             CH_SUMMARY: Saving PnP tech summary (/p                                       : Saving PnP tech summary (/p                                                 nP tech summary (/p                                                           mmary (/p                                                                                                                                                              np-technp-tech/         pnp-tech-np-tech/pnp-tech-d         iscovery-np-tech/pnp-tech-discovery-s         ummary)..np-tech/pnp-tech-discovery-summary)...          Please wnp-tech/pnp-tech-discovery-summary)... Please wa         it. Do nonp-tech/pnp-tech-discovery-summary)... Please wait. Do not          interruppnp-tech-discovery-summary)... Please wait. Do not interrupt         .
+Jul 17 20:05:20.569: %PNP-6-PNP_SAVING_TECH_SUMMARY: Saving PnP tech summary (/p^                                                                         np-tech
+/pnp-tech-discovery-summary)... Please wait. Do not interrupt.
+
+% Invalid input detected at '^' marker.
+
+Switch#Jul 17 20:05:22.652: %PNP-6-PNP_SUDI_UPDATE: Device SUDI [PID:WS-C2960$5:22.652: %PNP-6-PNP_SUDI_UPDATE: Device SUDI [PID:WS-C2960X         -48FPS-L,%PNP-6-PNP_SUDI_UPDATE: Device SUDI [PID:WS-C2960X-48FPS-L,                   _SUDI_UPDATE: Device SUDI [PID:WS-C2960X-48FPS-L,                             TE: Device SUDI [PID:WS-C2960X-48FPS-L,                                        SUDI [PID:WS-C2960X-48FPS-L,                                                 :WS-C2960X-48FPS-L,                                                           -48FPS-L,                                                                                                                                                              SN:FJC2SN:FJC23         17W0FC] iSN:FJC2317W0FC] id         entified
+Jul 17 20:05:22.652: %PNP-6-PNP_SUDI_UPDATE: Device SUDI [PID:WS-C2960X-48FPS-L,^                                                                         SN:FJC2
+317W0FC] identified
+
+% Invalid input detected at '^' marker.
+
+Switch#Switch#
+% Unknown command or computer name, or unable to find computer address
+Switch#Switch#
+% Unknown command or computer name, or unable to find computer address
+Switch#Jul 17 20:06:09.401: %PNP-6-PNP_TECH_SUMMARY_SAVED_WITH_ALARM: PnP tec$6:09.401: %PNP-6-PNP_TECH_SUMMARY_SAVED_WITH_ALARM: PnP tech          summary %PNP-6-PNP_TECH_SUMMARY_SAVED_WITH_ALARM: PnP tech summary (         /pnp-tech_TECH_SUMMARY_SAVED_WITH_ALARM: PnP tech summary (/pnp-tech/         pnp-tech-ARY_SAVED_WITH_ALARM: PnP tech summary (/pnp-tech/pnp-tech-d         iscovery-WITH_ALARM: PnP tech summary (/pnp-tech/pnp-tech-discovery-s         ummary) s: PnP tech summary (/pnp-tech/pnp-tech-discovery-summary) sa         ved with  summary (/pnp-tech/pnp-tech-discovery-summary) saved with a         larm (1/3/pnp-tech/pnp-tech-discovery-summary) saved with alarm (1/3)          (elapsedpnp-tech-discovery-summary) saved with alarm (1/3) (elapsed          time: 49 iscovery-summary) saved with alarm (1/3) (elapsed time: 49 s         econds).
+Jul 17 20:06:09.401: %PNP-6-PNP_TECH_SUMMARY_SAVED_WITH_ALARM: PnP tech summary ^(/pnp-tech/pnp-tech-discovery-summary) saved with alarm (1/3) (elapsed time: 49 
+seconds).
+
+% Invalid input detected at '^' marker.
+
+Switch#Jul 17 20:06:09.401: %PNP-6-PNP_DISCOVERY_STOPPED: PnP Discovery stopp$6:09.401: %PNP-6-PNP_DISCOVERY_STOPPED: PnP Discovery stoppe         d (Config%PNP-6-PNP_DISCOVERY_STOPPED: PnP Discovery stopped (Config          Wizard)
+Jul 17 20:06:09.401: %PNP-6-PNP_DISCOVERY_STOPPED: PnP Discovery stopped (Config^ Wizard)
+
+% Invalid input detected at '^' marker.
+
+Switch#Switch#
+% Unknown command or computer name, or unable to find computer address
+Switch#
+Switch#
+Switch#reload
+Proceed with reload? [confirm]
+
+Jul 17 20:28:00.138: %SYS-5-RELOAD: Reload requested by console. Reload Reason: Reload command.

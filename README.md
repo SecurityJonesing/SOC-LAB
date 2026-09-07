@@ -22,24 +22,7 @@ and Security.
 
 ## Architecture
 
-```
-Home Router (192.168.0.1)
-        |
-   [dumb switch] -- Management PC (dedicated USB-Ethernet link)
-        |
-     pfSense VM (on pve01) -- includes WireGuard remote-access VPN
-        |
-   Cisco Catalyst Switch (802.1Q trunk)
-   +--------+----------+-------------+
- MGMT10   INFRA20    RANGE30      SPAN monitor
- (mgmt)   (Docker/    (Kali, Win11-  (mirrors Range
-          Wazuh/       LTSC-victim,   traffic -> Suricata,
-          Suricata/     win11-ws02,    passive/no IP)
-          Shuffle/n8n,  dc01,
-          entra-connect-01, linux-victim,
-          + pve-ai      + phantom
-          inference)    computer objects)
-```
+![SOC lab network architecture](./architecture-diagram.svg)
 
 **Hybrid identity layer:** `dc01` (on-prem AD, domain `soclab.internal`)
 syncs to a Microsoft Entra ID tenant via Entra Connect, extending the lab's
@@ -64,7 +47,6 @@ not two disconnected efforts.
 | `pve01` | Dell PowerEdge R710, Xeon X5675, 64GB RAM | Primary Proxmox host — pfSense, Wazuh, Suricata, Shuffle, n8n, `entra-connect-01`, Range VMs, service UIs |
 | `pve-ai` | i9-10900KF (no iGPU), RTX 3070 (8GB) | GPU inference only (Ollama) — lab/SOC use only, not personal AI use |
 | Cisco Catalyst WS-C2960X-48FPS-L | IOS 15.2(7)E9 | VLAN trunk + management access port |
-| QNAP TS-869 Pro | — | Excluded from the lab as storage; future Proxmox QDevice candidate only |
 
 ## VLAN design
 
@@ -104,17 +86,20 @@ for planned scope and status.
 
 | Phase | Status | Notes |
 |---|---|---|
-| A — Network Rebuild | ✅ Complete | VLANs, trunk, mgmt access port, pfSense VM + interfaces. Snapshot `pfsense-clean-install`. |
-| A.5 — Isolation Rule | ✅ Complete | Range default-deny + explicit Wazuh-port allow, applied and reviewed. |
-| B — Docker/Git/Wazuh Substrate | ✅ Complete | Ubuntu Server 24.04.4 LTS VM (`wazuh-host`) built; Docker CE + Compose installed; Git configured with a dedicated SSH deploy key. Wazuh 4.14.6 deployed via Docker Compose (manager + indexer + dashboard, single-node), default credentials changed. INFRA20 has 5 outbound rules; RANGE30 has 3 rules. Win11-LTSC-Victim moved to Range VLAN, isolation proven live, instrumented with Sysmon and the Wazuh agent — first real endpoint enrolled and reporting active. |
-| C — Detection Engineering | ✅ Complete | Atomic Red Team fully staged and working on Win11-LTSC-Victim. Six custom detection rules written, debugged, and confirmed firing against real atomic test traffic, spanning five tactics: `100002`/`100003` (PowerShell spawned by a suspicious parent process, escalating on encoded commands, T1059.001/T1027 — Execution), `100004` (registry Run/RunOnce key persistence, T1547.001 — Persistence), `100005` (LSASS credential dumping via Silent Process Exit / IFEO GlobalFlag abuse, T1003.001 + T1546.012 — Credential Access), `100006` (local account/group enumeration via net.exe, T1087.001 — Discovery), `100007` (network share removal via net.exe, T1070.005 — Defense Evasion). All six rules chained via `if_sid` — no remaining `if_group` root-level short-circuit risk in the rule set. Claude Code has dedicated key-based SSH access to `wazuh-host`. SSH key-only hardening on `wazuh-host` complete (2026-08-11) — password auth disabled, key-based login verified. Known gap: Sysmon's current config does not capture FileDelete-family events (Event 23/26) — attempted enabling Event 26 on 2026-08-18, config validated and reloaded clean but the event never fired; root cause not isolated, next hypothesis is Defender/PPL interaction. Still open: rotate the `wazuh-host` account password (briefly exposed in plaintext by an automation tool, caught before use) — key-only SSH login is enforced, but the underlying account password itself has not yet been rotated. |
-| C.5 — Network Visibility | ⏳ Functionally complete, persistence outstanding | Full detection path proven end to end: VM tap → `tc` mirror → `wazuh-host` second NIC (`ens19`) → Suricata → `eve.json` → bind mount → Wazuh manager → indexer → dashboard, confirmed live by a Suricata alert (rule.id `86601`, `ET INFO Possible Kali Linux hostname in DHCP Request Packet`) appearing in Threat Hunting under `wazuh.manager`. Suricata 8.0.6 on `wazuh-host` (OISF PPA), Emerging Threats Open ruleset (52,713 rules enabled), `/var/log/suricata` bind-mounted read-only into the manager container. The `Too many fields for JSON decoder` blocker was resolved by disabling `stats` inside the eve-log `types:` list; it had in fact been resolved since the prior session, masked by a verification method that sampled an append-only log by line count rather than by timestamp. **Architectural finding:** the physical switch SPAN (source VLAN 30 → `Gi1/0/4` → `eno4` → `vmbr4`) proved blind to all east-west traffic. Kali, Win11-LTSC-Victim and pfSense all run on `pve01` attached to `vmbr3`, and a Linux bridge switches VM-to-VM frames in software without ever egressing to the Cisco switch — so the SPAN carried only broadcast/multicast noise (ARP visible, TCP absent; Wazuh agent traffic on 1514 absent entirely). Remediated at the hypervisor layer with `tc mirred` ingress mirrors on `tap100i0` and `tap101i0` targeting `tap103i1`, verified bidirectionally via a captured SYN/SYN-ACK exchange on 3389. The switch SPAN path remains valid for north-south traffic. **Remaining:** the `tc` mirrors are runtime-only and do not survive a `pve01` reboot or a VM restart (which recreates the tap and silently drops that VM's mirror). Proxmox hookscripts are the preferred persistence mechanism, since they re-apply on both VM start and host boot. |
-| C.6 — Attack Surface & AD Expansion | ⏳ In progress | Infra hardening underway: Kali moved from flat `vmbr1` to RANGE30 and confirmed isolated (2026-08-18 — no internet, no home/MGMT reach, no ICMP to INFRA20, consistent with the Range default-deny model already proven for Win11-LTSC-Victim). Remaining infra-hardening items: pfSense log forwarding into Wazuh, WireGuard remote-access VPN. AD/DC build (`dc01`, `win11-ws02`, tiered OUs/groups/GPOs, six deliberate misconfigurations, file shares, ADCS) and the full manual kill chain (reduced scope — no full interactive `dc01` compromise) not yet started. |
-| C.7 — IAM/Entra ID Track | ⏳ Not started | Entra ID Free + P1 trial, Entra Connect hybrid sync, Exchange Online, Conditional Access/MFA, cloud identity enumeration |
-| D — AI Triage Layer | ⏳ Not started | Governed Wazuh triage agent (`wazuh-triage-01`) |
-| E — Local AI + n8n Routing | ⏳ Partially complete | `pve-ai`/`ai-vm` GPU-passthrough infrastructure built and verified (2026-07-13); Ollama/Open WebUI stack and n8n routing still to come |
-| F — SOAR (Shuffle) | ⏳ Not started | Slots in after the detection/attack-surface phases |
-| G — Case Management (TheHive + Cortex) | ⏸ Deferred | Requires Cassandra + Elasticsearch, attempted after F and E are stable |
+| 1 — Network Rebuild | ✅ Complete | VLANs, trunk, mgmt access port, pfSense VM + interfaces. Snapshot `pfsense-clean-install`. |
+| 2 — Isolation Rule | ✅ Complete | Range default-deny + explicit Wazuh-port allow, applied and reviewed. |
+| 3 — Wazuh Substrate | ✅ Complete | Ubuntu Server 24.04.4 LTS VM (`wazuh-host`) built; Docker CE + Compose installed; Git configured with a dedicated SSH deploy key. Wazuh 4.14.6 deployed via Docker Compose (manager + indexer + dashboard, single-node), default credentials changed. INFRA20 has 5 outbound rules; RANGE30 has 3 rules. Win11-LTSC-Victim moved to Range VLAN, isolation proven live, instrumented with Sysmon and the Wazuh agent — first real endpoint enrolled and reporting active. |
+| 4 — Detection Engineering | ✅ Complete | Atomic Red Team fully staged and working on Win11-LTSC-Victim. Six custom detection rules written, debugged, and confirmed firing against real atomic test traffic, spanning five tactics: `100002`/`100003` (PowerShell spawned by a suspicious parent process, escalating on encoded commands, T1059.001/T1027 — Execution), `100004` (registry Run/RunOnce key persistence, T1547.001 — Persistence), `100005` (LSASS credential dumping via Silent Process Exit / IFEO GlobalFlag abuse, T1003.001 + T1546.012 — Credential Access), `100006` (local account/group enumeration via net.exe, T1087.001 — Discovery), `100007` (network share removal via net.exe, T1070.005 — Defense Evasion). All six rules chained via `if_sid` — no remaining `if_group` root-level short-circuit risk in the rule set. Claude Code has dedicated key-based SSH access to `wazuh-host`. SSH key-only hardening on `wazuh-host` complete (2026-08-11) — password auth disabled, key-based login verified. `100006` was later tuned (2026-09-07) to exclude `net.exe` spawned by `wazuh-agent.exe` itself, since Wazuh's own inventory collector was tripping the rule. Known gap: Sysmon's current config does not capture FileDelete-family events (Event 23/26) — attempted enabling Event 26 on 2026-08-18, config validated and reloaded clean but the event never fired; root cause not isolated, next hypothesis is Defender/PPL interaction. Still open: rotate the `wazuh-host` account password (briefly exposed in plaintext by an automation tool, caught before use) — key-only SSH login is enforced, but the underlying account password itself has not yet been rotated. |
+| 5 — Network Visibility | ⏳ Functionally complete, persistence outstanding | Full detection path proven end to end: VM tap → `tc` mirror → `wazuh-host` second NIC (`ens19`) → Suricata → `eve.json` → bind mount → Wazuh manager → indexer → dashboard, confirmed live by a Suricata alert (rule.id `86601`, `ET INFO Possible Kali Linux hostname in DHCP Request Packet`) appearing in Threat Hunting under `wazuh.manager`. Suricata 8.0.6 on `wazuh-host` (OISF PPA), Emerging Threats Open ruleset (52,713 rules enabled), `/var/log/suricata` bind-mounted read-only into the manager container. The `Too many fields for JSON decoder` blocker was resolved by disabling `stats` inside the eve-log `types:` list; it had in fact been resolved since the prior session, masked by a verification method that sampled an append-only log by line count rather than by timestamp. **Architectural finding:** the physical switch SPAN (source VLAN 30 → `Gi1/0/4` → `eno4` → `vmbr4`) proved blind to all east-west traffic. Kali, Win11-LTSC-Victim and pfSense all run on `pve01` attached to `vmbr3`, and a Linux bridge switches VM-to-VM frames in software without ever egressing to the Cisco switch — so the SPAN carried only broadcast/multicast noise (ARP visible, TCP absent; Wazuh agent traffic on 1514 absent entirely). Remediated at the hypervisor layer with `tc mirred` ingress mirrors on `tap100i0` and `tap101i0` targeting `tap103i1`, verified bidirectionally via a captured SYN/SYN-ACK exchange on 3389. The switch SPAN path remains valid for north-south traffic. **Remaining:** the `tc` mirrors are runtime-only and do not survive a `pve01` reboot or a VM restart (which recreates the tap and silently drops that VM's mirror). Proxmox hookscripts are the preferred persistence mechanism, since they re-apply on both VM start and host boot. |
+| 6 — Attack Surface | ⏳ In progress | Kali moved from flat `vmbr1` to RANGE30 and confirmed isolated (2026-08-18 — no internet, no home/MGMT reach, no ICMP to INFRA20, consistent with the Range default-deny model already proven for Win11-LTSC-Victim). Remaining: pfSense log forwarding into Wazuh, WireGuard remote-access VPN. |
+| 7 — AD Expansion | ⏳ Not started | AD/DC build (`dc01`, `win11-ws02`, tiered OUs/groups/GPOs, six deliberate misconfigurations, file shares, ADCS) and the full manual kill chain (reduced scope — no full interactive `dc01` compromise). |
+| 8 — Hybrid Identity | ⏳ Not started | Entra ID Free + P1 trial, Entra Connect hybrid sync, Exchange Online, Conditional Access/MFA, cloud identity enumeration |
+| 9 — AI Triage Layer | ⏳ Not started | Governed Wazuh triage agent (`wazuh-triage-01`) |
+| 10 — Local AI and Routing | ⏳ Partially complete | `pve-ai`/`ai-vm` GPU-passthrough infrastructure built and verified (2026-07-13); Ollama/Open WebUI stack and n8n routing still to come |
+| 11 — SOAR | ⏳ Not started | Slots in after the detection/attack-surface phases |
+| 12 — Case Management | ⏸ Deferred | Requires Cassandra + Elasticsearch, attempted after phases 10 and 11 are stable |
+
+**Numbering note:** phases were renumbered from the original A/A.5/B/C/C.5/C.6/C.7/D/E/F/G scheme to permanent integers 1–12 on 2026-09-06. See `LAB-BLUEPRINT.md` for the full old-to-new mapping.
 
 **Explicitly out of scope, evaluated and deliberately excluded** (see `LAB-BLUEPRINT.md` for full reasoning): MITRE Caldera, Entra ID P2, on-prem Exchange Server, standalone GoPhish + mail relay, and full interactive host-level compromise of `dc01`.
 

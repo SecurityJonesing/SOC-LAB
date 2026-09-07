@@ -1,0 +1,45 @@
+**********************
+PowerShell transcript start
+Start time: 20260811190410
+Username: MICHAEL\micha
+RunAs User: MICHAEL\micha
+Configuration Name: 
+Machine: MICHAEL (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.4.0_x64__8wekyb3d8bbwe\pwsh.dll
+Process ID: 30632
+PSVersion: 7.6.4
+PSEdition: Core
+GitCommitId: 7.6.4
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\micha\SOC-Lab\Logs\session-2026-08-11-1904.txt
+PS C:\Windows\System32> ssh michael@10.10.20.100
+michael@10.10.20.100's password:
+Permission denied, please try again.
+michael@10.10.20.100's password:
+PS C:\Windows\System32> ssh -i $HOME\.ssh\wazuh-host_personal_ed25519 michael@10.10.20.100
+
+Expanded Security Maintenance for Applications is not enabled.
+
+39 updates can be applied immediately.
+1 of these updates is a standard security update.
+To see these additional updates run: apt list --upgradable
+
+Enable ESM Apps to receive additional future security updates.
+See https://ubuntu.com/esm or run: sudo pro status
+
+
+Last login: Tue Aug 11 22:43:26 2026 from 10.10.10.100
+michael@wazuh-host:~$ Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Atomic Red Tea
+m"
+Get-ItemProperty: command not found
+michael@wazuh-host:~$ Get-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "Atomic Red Tea
+m"
+Get-ItemProperty: command not found
+michael@wazuh-host:~$ Connection to 10.10.20.100 closed by remote host.
+Connection to 10.10.20.100 closed.

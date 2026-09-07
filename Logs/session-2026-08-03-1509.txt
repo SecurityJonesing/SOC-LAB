@@ -1,0 +1,58 @@
+**********************
+PowerShell transcript start
+Start time: 20260803150954
+Username: MICHAEL\micha
+RunAs User: MICHAEL\micha
+Configuration Name: 
+Machine: MICHAEL (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.4.0_x64__8wekyb3d8bbwe\pwsh.dll
+Process ID: 44140
+PSVersion: 7.6.4
+PSEdition: Core
+GitCommitId: 7.6.4
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\micha\SOC-Lab\Logs\session-2026-08-03-1509.txt
+PS C:\Users\micha\SOC-Lab\Updated 7-16-2026> ssh michael@10.10.20.100
+Aug 03 20:39:11 wazuh-host dockerd[2879]: time="2026-08-03T20:39:11.718947286Z" level=info msg="API listen on /…er.sock"
+Aug 03 20:39:11 wazuh-host systemd[1]: Started docker.service - Docker Application Container Engine.
+Hint: Some lines were ellipsized, use -l to show in full.
+michael@wazuh-host:~$ sudo docker run hello-world
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+4f55086f7dd0: Pull complete
+d5e71e642bf5: Download complete
+Digest: sha256:c3cbe1cc1aa588a64951ac6286e0df7b27fe2e6324b1001c619bb358770c0178
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/
+
+michael@wazuh-host:~$ sudo usermod -aG docker michael
+[sudo] password for michael:
+michael@wazuh-host:~$ exit
+logout
+Connection to 10.10.20.100 closed.

@@ -1,0 +1,37 @@
+**********************
+PowerShell transcript start
+Start time: 20260802214805
+Username: MICHAEL\micha
+RunAs User: MICHAEL\micha
+Configuration Name: 
+Machine: MICHAEL (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.4.0_x64__8wekyb3d8bbwe\pwsh.dll
+Process ID: 4080
+PSVersion: 7.6.4
+PSEdition: Core
+GitCommitId: 7.6.4
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is C:\Users\micha\SOC-Lab\Logs\session-2026-08-02-2148.txt
+PS C:\Users\micha\SOC-Lab> ssh michael@10.10.20.100
+
+
+Last login: Mon Aug  3 02:45:54 2026 from 10.10.10.100
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+michael@wazuh-host:~$ sudo sysctl -w vm.max_map_count=262144
+[sudo] password for michael:
+vm.max_map_count = 262144
+michael@wazuh-host:~$ echo "vm.max_map_count=262144" | sudo tee -a /etc/sysctl.conf
+vm.max_map_count=262144
+michael@wazuh-host:~$ grep max_map_count /etc/sysctl.conf
+vm.max_map_count=262144
+michael@wazuh-host:~$ exit
+logout
+Connection to 10.10.20.100 closed.
