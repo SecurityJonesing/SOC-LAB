@@ -1,0 +1,73 @@
+<svg width="860" height="534" viewBox="0 0 860 534" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="4. Hybrid identity — one continuous story, on-prem to cloud">
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, Segoe UI, Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 32px 20px 80px; color: #2C2C2A; background: #FFFFFF; }
+  h1 { font-size: 26px; color: #1D4E89; margin-bottom: 4px; }
+  .sub { color: #5F5E5A; font-size: 14px; margin-bottom: 40px; }
+  h2 { font-size: 19px; color: #222; border-top: 1px solid #E0DED6; padding-top: 32px; margin-top: 40px; }
+  p.caption { font-size: 14px; color: #5F5E5A; line-height: 1.6; max-width: 700px; }
+  
+  .th { font: 500 13px Arial, sans-serif; }
+  .ts { font: 400 11px Arial, sans-serif; }
+  .arr { stroke:#5F5E5A; stroke-width:1; fill:none; }
+  .plain-text { fill:#2C2C2A; }
+  .plain-ts   { fill:#5F5E5A; }
+
+  /* light mode */
+  .c-gray rect, .c-gray path.shape   { fill:#D3D1C7; stroke:#444441; } .c-gray .th{fill:#2C2C2A} .c-gray .ts{fill:#444441}
+  .c-blue rect, .c-blue path.shape   { fill:#B5D4F4; stroke:#0C447C; } .c-blue .th{fill:#042C53} .c-blue .ts{fill:#0C447C}
+  .c-red rect, .c-red path.shape    { fill:#F7C1C1; stroke:#791F1F; } .c-red .th{fill:#501313} .c-red .ts{fill:#791F1F}
+  .c-teal rect, .c-teal path.shape   { fill:#9FE1CB; stroke:#085041; } .c-teal .th{fill:#04342C} .c-teal .ts{fill:#085041}
+  .c-amber rect, .c-amber path.shape  { fill:#FAC775; stroke:#633806; } .c-amber .th{fill:#412402} .c-amber .ts{fill:#633806}
+  .c-purple rect, .c-purple path.shape { fill:#CECBF6; stroke:#3C3489; } .c-purple .th{fill:#26215C} .c-purple .ts{fill:#3C3489}
+  .c-green rect, .c-green path.shape  { fill:#C0DD97; stroke:#27500A; } .c-green .th{fill:#173404} .c-green .ts{fill:#27500A}
+  .c-ghost rect { fill:none; stroke:#B4B2A9; stroke-width:0.75; stroke-dasharray:3 3; } .c-ghost .th{fill:#5F5E5A} .c-ghost .ts{fill:#8A887F}
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #1B1B19; color: #E4E2D8; }
+    h1 { color: #85B7EB; }
+    h2 { color: #E4E2D8; border-top-color: #444441; }
+    .sub, p.caption { color: #B4B2A9; }
+    .arr { stroke:#B4B2A9; }
+    .plain-text { fill:#E4E2D8; }
+    .plain-ts   { fill:#B4B2A9; }
+
+    .c-gray rect, .c-gray path.shape   { fill:#444441; stroke:#B4B2A9; } .c-gray .th{fill:#F1EFE8} .c-gray .ts{fill:#D3D1C7}
+    .c-blue rect, .c-blue path.shape   { fill:#0C447C; stroke:#85B7EB; } .c-blue .th{fill:#E6F1FB} .c-blue .ts{fill:#B5D4F4}
+    .c-red rect, .c-red path.shape    { fill:#791F1F; stroke:#F09595; } .c-red .th{fill:#FCEBEB} .c-red .ts{fill:#F7C1C1}
+    .c-teal rect, .c-teal path.shape   { fill:#085041; stroke:#5DCAA5; } .c-teal .th{fill:#E1F5EE} .c-teal .ts{fill:#9FE1CB}
+    .c-amber rect, .c-amber path.shape  { fill:#633806; stroke:#EF9F27; } .c-amber .th{fill:#FAEEDA} .c-amber .ts{fill:#FAC775}
+    .c-purple rect, .c-purple path.shape { fill:#3C3489; stroke:#AFA9EC; } .c-purple .th{fill:#EEEDFE} .c-purple .ts{fill:#CECBF6}
+    .c-green rect, .c-green path.shape  { fill:#27500A; stroke:#97C459; } .c-green .th{fill:#EAF3DE} .c-green .ts{fill:#C0DD97}
+    .c-ghost rect { stroke:#6B6A63; } .c-ghost .th{fill:#B4B2A9} .c-ghost .ts{fill:#8A887F}
+  }
+
+.hd2{fill:#222} .subtxt{fill:#5F5E5A}
+@media (prefers-color-scheme: dark) { .hd2{fill:#E4E2D8} .subtxt{fill:#B4B2A9} }
+rect.bgrect{fill:#FFFFFF} @media (prefers-color-scheme: dark) { rect.bgrect{fill:#1B1B19} }</style>
+<rect class="bgrect" x="0" y="0" width="860" height="534"/>
+<text x="20" y="20" font-size="19" font-weight="600" class="hd2">4. Hybrid identity — one continuous story, on-prem to cloud</text>
+<text x="20" y="46" font-size="13" class="subtxt">Entra Connect syncs one direction, on-prem to cloud — not the two-way sync it's sometimes assumed to be. AADInternals/ROADtools</text>
+<text x="20" y="63" font-size="13" class="subtxt">extend the on-prem kill chain into the tenant, the deliberate connective piece between the AD environment and the IAM/Entra track.</text>
+<g transform="translate(40.0,94)">
+<defs><marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+<g class="c-red"><rect x="40" y="60" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="130" y="80" text-anchor="middle" dominant-baseline="central">dc01</text><text class="ts" x="130" y="98" text-anchor="middle" dominant-baseline="central">soclab.internal, on RANGE30</text></g>
+<line x1="220" y1="88" x2="260" y2="88" class="arr" marker-end="url(#a4)"/>
+<g class="c-teal"><rect x="262" y="60" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="352" y="80" text-anchor="middle" dominant-baseline="central">entra-connect-01</text><text class="ts" x="352" y="98" text-anchor="middle" dominant-baseline="central">one-way sync + password hash</text></g>
+<line x1="442" y1="88" x2="482" y2="88" class="arr" marker-end="url(#a4)"/>
+<g class="c-purple"><rect x="484" y="40" width="260" height="96" rx="8" stroke-width="0.5"/><text class="th" x="504" y="64">Microsoft Entra ID tenant</text><text class="ts" x="504" y="86">Free (permanent) + P1 trial (30 days,</text><text class="ts" x="504" y="102">activated last) — Conditional Access, MFA</text><text class="ts" x="504" y="118">via Microsoft Authenticator</text></g>
+
+<line x1="614" y1="136" x2="614" y2="170" class="arr" marker-end="url(#a4)"/>
+<g class="c-blue"><rect x="484" y="172" width="260" height="76" rx="8" stroke-width="0.5"/><text class="th" x="504" y="196">Exchange Online (Plan 1)</text><text class="ts" x="504" y="216">real mailboxes + Defender for O365</text><text class="ts" x="504" y="232">Attack Simulation Training (phishing)</text></g>
+
+<g class="c-red"><rect x="40" y="220" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="130" y="240" text-anchor="middle" dominant-baseline="central">Kali</text><text class="ts" x="130" y="258" text-anchor="middle" dominant-baseline="central">AADInternals / ROADtools</text></g>
+<path d="M220,248 C 350,320 470,320 600,250" fill="none" stroke="#3C3489" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a4)"/>
+<text class="ts plain-ts" x="240" y="330" text-anchor="start">extends the on-prem chain into cloud identity</text>
+<text class="ts plain-ts" x="240" y="346" text-anchor="start">enumeration — the deliberate C.6 ↔ C.7 bridge</text>
+
+<g class="c-gray"><rect x="40" y="360" width="700" height="44" rx="8" stroke-width="0.5"/>
+<text class="ts" x="60" y="384">Not this build: password writeback (P1-only, optional), Entra ID P2 (Identity Protection, PIM, Access Reviews)</text>
+</g>
+</g>
+</svg>
