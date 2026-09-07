@@ -1,8 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>SOC Lab — Diagrams</title>
+<svg viewBox="0 0 900 6077" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SOC Lab — Diagrams">
 <style>
   :root { color-scheme: light dark; }
   body { font-family: -apple-system, Segoe UI, Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 32px 20px 80px; color: #2C2C2A; background: #FFFFFF; }
@@ -10,7 +6,7 @@
   .sub { color: #5F5E5A; font-size: 14px; margin-bottom: 40px; }
   h2 { font-size: 19px; color: #222; border-top: 1px solid #E0DED6; padding-top: 32px; margin-top: 40px; }
   p.caption { font-size: 14px; color: #5F5E5A; line-height: 1.6; max-width: 700px; }
-  svg { width: 100%; height: auto; display: block; margin: 16px 0; }
+  
   .th { font: 500 13px Arial, sans-serif; }
   .ts { font: 400 11px Arial, sans-serif; }
   .arr { stroke:#5F5E5A; stroke-width:1; fill:none; }
@@ -45,16 +41,22 @@
     .c-green rect, .c-green path.shape  { fill:#27500A; stroke:#97C459; } .c-green .th{fill:#EAF3DE} .c-green .ts{fill:#C0DD97}
     .c-ghost rect { stroke:#6B6A63; } .c-ghost .th{fill:#B4B2A9} .c-ghost .ts{fill:#8A887F}
   }
-</style>
-</head>
-<body>
 
-<h1>SOC Lab — Diagrams</h1>
-<p class="sub">Eight reference diagrams: network topology, the full kill chain, the AD attack-surface map, hybrid identity architecture, agent governance, the bridge/socket lesson, the recovery ladder, and the phase map. Scroll down for all eight.</p>
-
-<h2>1. Lab network topology</h2>
-<p class="caption">Every packet crosses pfSense on the way between VLANs. Two deliberate exceptions exist in an otherwise default-deny Range fence: the green line (Wazuh log ingest, existing since Phase A.5) and the amber line (Entra Connect sync, the one INFRA20→RANGE30 exception, narrow and reviewed). The dashed boxes are phantom AD computer objects — directory entries, not live VMs.</p>
-<svg viewBox="0 0 900 760" role="img" xmlns="http://www.w3.org/2000/svg">
+.hd{fill:#1D4E89} .subtxt{fill:#5F5E5A} .hd2{fill:#222} .rule{stroke:#E0DED6;stroke-width:1}
+@media (prefers-color-scheme: dark) { .hd{fill:#85B7EB} .hd2{fill:#E4E2D8} .subtxt{fill:#B4B2A9} .rule{stroke:#444441} }
+rect.bgrect{fill:#FFFFFF} @media (prefers-color-scheme: dark) { rect.bgrect{fill:#1B1B19} }</style>
+<rect class="bgrect" x="0" y="0" width="900" height="6077"/>
+<text x="40" y="40" font-size="26" font-weight="700" class="hd">SOC Lab — Diagrams</text>
+<text x="40" y="74" font-size="13" class="subtxt">Eight reference diagrams: network topology, the full kill chain, the AD attack-surface map, hybrid identity</text>
+<text x="40" y="92" font-size="13" class="subtxt">architecture, agent governance, the bridge/socket lesson, the recovery ladder, and the phase map. Scroll down</text>
+<text x="40" y="110" font-size="13" class="subtxt">for all eight.</text>
+<line x1="40" y1="168" x2="860" y2="168" class="rule"/>
+<text x="40" y="194" font-size="18" font-weight="600" class="hd2">1. Lab network topology</text>
+<text x="40" y="218" font-size="13" class="subtxt">Every packet crosses pfSense on the way between VLANs. Two deliberate exceptions exist in an otherwise default-deny</text>
+<text x="40" y="235" font-size="13" class="subtxt">Range fence: the green line (Wazuh log ingest, existing since Phase A.5) and the amber line (Entra Connect sync,</text>
+<text x="40" y="252" font-size="13" class="subtxt">the one INFRA20→RANGE30 exception, narrow and reviewed). The dashed boxes are phantom AD computer objects —</text>
+<text x="40" y="269" font-size="13" class="subtxt">directory entries, not live VMs.</text>
+<g transform="translate(40,302)">
 <defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <g class="c-gray"><rect x="360" y="20" width="180" height="40" rx="8" stroke-width="0.5"/><text class="th" x="450" y="40" text-anchor="middle" dominant-baseline="central">Internet</text></g>
 <line x1="450" y1="60" x2="450" y2="78" class="arr" marker-end="url(#a1)"/>
@@ -110,11 +112,13 @@
 
 <g class="c-purple"><rect x="60" y="440" width="240" height="80" rx="8" stroke-width="0.5"/><text class="th" x="180" y="460" text-anchor="middle" dominant-baseline="central">Microsoft cloud</text><text class="ts" x="75" y="480">Entra ID (Free + P1 trial)</text><text class="ts" x="75" y="496">Exchange Online Plan 1</text><text class="ts" x="75" y="512">reached via entra-connect-01 + browser</text></g>
 <line x1="300" y1="460" x2="330" y2="440" class="arr" marker-end="url(#a1)"/>
-</svg>
-
-<h2>2. The full kill chain — one story, confirmed at every stage</h2>
-<p class="caption">Every stage runs manually — no orchestration tool executes this chain autonomously. A Wazuh or Suricata detection is confirmed before moving to the next stage. Scope stops after <em>win11-ws02</em> is compromised; DCSync provides domain-wide credential material without needing a shell on <em>dc01</em> itself.</p>
-<svg viewBox="0 0 780 1080" role="img" xmlns="http://www.w3.org/2000/svg">
+</g>
+<line x1="40" y1="1092" x2="860" y2="1092" class="rule"/>
+<text x="40" y="1118" font-size="18" font-weight="600" class="hd2">2. The full kill chain — one story, confirmed at every stage</text>
+<text x="40" y="1142" font-size="13" class="subtxt">Every stage runs manually — no orchestration tool executes this chain autonomously. A Wazuh or Suricata detection</text>
+<text x="40" y="1159" font-size="13" class="subtxt">is confirmed before moving to the next stage. Scope stops after win11-ws02 is compromised; DCSync provides domain-</text>
+<text x="40" y="1176" font-size="13" class="subtxt">wide credential material without needing a shell on dc01 itself.</text>
+<g transform="translate(60.0,1209)">
 <defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 
 <g class="c-red"><rect x="60" y="20" width="380" height="64" rx="8" stroke-width="0.5"/><text class="th" x="80" y="44">1. Initial Access</text><text class="ts" x="80" y="64">web app exploit (DVWA/Juice Shop) or WireGuard VPN</text></g>
@@ -172,11 +176,13 @@
 <text class="ts" x="80" y="994">stage above is executed by hand, which is the point: this is a chain run</text>
 <text class="ts" x="80" y="1010">myself, end to end, not one configured and watched execute.</text>
 </g>
-</svg>
-
-<h2>3. AD attack surface — everything converges on one point</h2>
-<p class="caption">Six deliberately planted misconfigurations, each a distinct, real-world attack primitive, all leading to the same place: Domain Admin–equivalent access without ever touching the Domain Admins group directly. This is what BloodHound's shortest-path analysis is built to surface.</p>
-<svg viewBox="0 0 780 620" role="img" xmlns="http://www.w3.org/2000/svg">
+</g>
+<line x1="40" y1="2319" x2="860" y2="2319" class="rule"/>
+<text x="40" y="2345" font-size="18" font-weight="600" class="hd2">3. AD attack surface — everything converges on one point</text>
+<text x="40" y="2369" font-size="13" class="subtxt">Six deliberately planted misconfigurations, each a distinct, real-world attack primitive, all leading to the same</text>
+<text x="40" y="2386" font-size="13" class="subtxt">place: Domain Admin–equivalent access without ever touching the Domain Admins group directly. This is what</text>
+<text x="40" y="2403" font-size="13" class="subtxt">BloodHound's shortest-path analysis is built to surface.</text>
+<g transform="translate(60.0,2436)">
 <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 
 <g class="c-gray"><rect x="300" y="20" width="180" height="52" rx="8" stroke-width="0.5"/><text class="th" x="390" y="40" text-anchor="middle" dominant-baseline="central">Low-privilege</text><text class="ts" x="390" y="58" text-anchor="middle" dominant-baseline="central">compromised user</text></g>
@@ -209,11 +215,13 @@
 <g class="c-red"><rect x="270" y="470" width="240" height="60" rx="8" stroke-width="0.5"/><text class="th" x="390" y="492" text-anchor="middle" dominant-baseline="central">Domain Admin–equivalent</text><text class="ts" x="390" y="510" text-anchor="middle" dominant-baseline="central">access — not group membership</text></g>
 
 <g class="c-ghost"><rect x="90" y="546" width="600" height="56" rx="6" stroke-width="0.75"/><text class="th" x="390" y="564" text-anchor="middle" dominant-baseline="central">Also present, not shown above</text><text class="ts" x="390" y="582" text-anchor="middle" dominant-baseline="central">no LAPS initially (fixed and re-tested mid-chain) — see the kill chain diagram</text></g>
-</svg>
-
-<h2>4. Hybrid identity — one continuous story, on-prem to cloud</h2>
-<p class="caption">Entra Connect syncs one direction, on-prem to cloud — not the two-way sync it's sometimes assumed to be. AADInternals/ROADtools extend the on-prem kill chain into the tenant, the deliberate connective piece between the AD environment and the IAM/Entra track.</p>
-<svg viewBox="0 0 780 420" role="img" xmlns="http://www.w3.org/2000/svg">
+</g>
+<line x1="40" y1="3086" x2="860" y2="3086" class="rule"/>
+<text x="40" y="3112" font-size="18" font-weight="600" class="hd2">4. Hybrid identity — one continuous story, on-prem to cloud</text>
+<text x="40" y="3136" font-size="13" class="subtxt">Entra Connect syncs one direction, on-prem to cloud — not the two-way sync it's sometimes assumed to be.</text>
+<text x="40" y="3153" font-size="13" class="subtxt">AADInternals/ROADtools extend the on-prem kill chain into the tenant, the deliberate connective piece between the</text>
+<text x="40" y="3170" font-size="13" class="subtxt">AD environment and the IAM/Entra track.</text>
+<g transform="translate(60.0,3203)">
 <defs><marker id="a4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 
 <g class="c-red"><rect x="40" y="60" width="180" height="56" rx="8" stroke-width="0.5"/><text class="th" x="130" y="80" text-anchor="middle" dominant-baseline="central">dc01</text><text class="ts" x="130" y="98" text-anchor="middle" dominant-baseline="central">soclab.internal, on RANGE30</text></g>
@@ -233,11 +241,13 @@
 <g class="c-gray"><rect x="40" y="360" width="700" height="44" rx="8" stroke-width="0.5"/>
 <text class="ts" x="60" y="384">Not this build: password writeback (P1-only, optional), Entra ID P2 (Identity Protection, PIM, Access Reviews)</text>
 </g>
-</svg>
-
-<h2>5. Agent governance — four identities, none of them mine</h2>
-<p class="caption">Every non-human actor in this lab gets its own credential, least-privilege scope, and a separate audit trail. <em>wazuh-triage-01</em> is the specialist; <em>triage-router-01</em> is the plumbing underneath it. Shuffle and the Entra Connect sync account are registered the same way, even before they're built.</p>
-<svg viewBox="0 0 780 560" role="img" xmlns="http://www.w3.org/2000/svg">
+</g>
+<line x1="40" y1="3653" x2="860" y2="3653" class="rule"/>
+<text x="40" y="3679" font-size="18" font-weight="600" class="hd2">5. Agent governance — four identities, none of them mine</text>
+<text x="40" y="3703" font-size="13" class="subtxt">Every non-human actor in this lab gets its own credential, least-privilege scope, and a separate audit trail.</text>
+<text x="40" y="3720" font-size="13" class="subtxt">wazuh-triage-01 is the specialist; triage-router-01 is the plumbing underneath it. Shuffle and the Entra Connect</text>
+<text x="40" y="3737" font-size="13" class="subtxt">sync account are registered the same way, even before they're built.</text>
+<g transform="translate(60.0,3770)">
 <defs><marker id="a5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 
 <g class="c-purple"><rect x="40" y="20" width="320" height="120" rx="8" stroke-width="0.5"/>
@@ -286,11 +296,13 @@
 <text class="ts" x="60" y="500">10:04  agent=wazuh-triage-01  alert=1234  verdict=suspicious</text>
 <text class="ts" x="60" y="520">10:07  user=analyst           alert=1234  verdict=benign  override=yes</text>
 </g>
-</svg>
-
-<h2>6. Why the attack VM went dark — the bridge is a wall socket</h2>
-<p class="caption">A VM plugs into a bridge, not a NIC. Move the bridge's uplink cable to a different NIC, and every VM still pointed at the old bridge goes dark — silently, with no error anywhere. Kept from the original diagram set — the lesson is foundational and still applies to every VM in this lab.</p>
-<svg viewBox="0 0 680 440" role="img" xmlns="http://www.w3.org/2000/svg">
+</g>
+<line x1="40" y1="4360" x2="860" y2="4360" class="rule"/>
+<text x="40" y="4386" font-size="18" font-weight="600" class="hd2">6. Why the attack VM went dark — the bridge is a wall socket</text>
+<text x="40" y="4410" font-size="13" class="subtxt">A VM plugs into a bridge, not a NIC. Move the bridge's uplink cable to a different NIC, and every VM still pointed</text>
+<text x="40" y="4427" font-size="13" class="subtxt">at the old bridge goes dark — silently, with no error anywhere. Kept from the original diagram set — the lesson is</text>
+<text x="40" y="4444" font-size="13" class="subtxt">foundational and still applies to every VM in this lab.</text>
+<g transform="translate(110.0,4477)">
 <defs><marker id="a6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <g class="c-teal"><rect x="40" y="40" width="280" height="32" rx="6" stroke-width="0.5"/><text class="th" x="180" y="56" text-anchor="middle" dominant-baseline="central">before — cable in NIC2</text></g>
 <g class="c-red"><rect x="360" y="40" width="280" height="32" rx="6" stroke-width="0.5"/><text class="th" x="500" y="56" text-anchor="middle" dominant-baseline="central">after — cable moved to NIC1</text></g>
@@ -317,11 +329,12 @@
 <text class="th" x="60" y="344">The lesson</text>
 <text class="ts" x="60" y="366">Moving the wire behind the wall does not move the lamp.</text>
 <text class="ts" x="60" y="384">A VM plugs into a bridge, not a NIC — move the bridge's uplink and it goes dark, silently.</text></g>
-</svg>
-
-<h2>7. The recovery ladder — climb down until something works</h2>
-<p class="caption">Never make a change that could cut off the only access path. Confirm the next rung down works before it's needed — the green rungs are physical and need no network, no config, no Java. That's why they're always the true fallback.</p>
-<svg viewBox="0 0 680 400" role="img" xmlns="http://www.w3.org/2000/svg">
+</g>
+<line x1="40" y1="4947" x2="860" y2="4947" class="rule"/>
+<text x="40" y="4973" font-size="18" font-weight="600" class="hd2">7. The recovery ladder — climb down until something works</text>
+<text x="40" y="4997" font-size="13" class="subtxt">Never make a change that could cut off the only access path. Confirm the next rung down works before it's needed —</text>
+<text x="40" y="5014" font-size="13" class="subtxt">the green rungs are physical and need no network, no config, no Java. That's why they're always the true fallback.</text>
+<g transform="translate(110.0,5047)">
 <defs><marker id="a7" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <g class="c-gray"><rect x="40" y="40" width="380" height="48" rx="8" stroke-width="0.5"/><text class="th" x="60" y="58" dominant-baseline="central">Proxmox web UI</text><text class="ts" x="60" y="76" dominant-baseline="central">192.168.0.201:8006</text></g>
 <line x1="230" y1="88" x2="230" y2="100" class="arr" marker-end="url(#a7)"/>
@@ -343,11 +356,12 @@
 <text class="th" x="460" y="264">Green = physical</text>
 <text class="ts" x="460" y="288"><tspan x="460" dy="0">Needs no network, no</tspan><tspan x="460" dy="18">config, no Java. This</tspan><tspan x="460" dy="18">is why real risks up top</tspan><tspan x="460" dy="18">are affordable.</tspan></text>
 </g>
-</svg>
-
-<h2>8. Phase map — what unlocks what</h2>
-<p class="caption">A.5 must pass before C — no attack code on an unfenced network. B must pass before C — no SIEM, nothing to detect with. C.6/C.7 are locked, deliberately-reduced scope. G is deferred, attempted only once F and E are stable.</p>
-<svg viewBox="0 0 780 460" role="img" xmlns="http://www.w3.org/2000/svg">
+</g>
+<line x1="40" y1="5477" x2="860" y2="5477" class="rule"/>
+<text x="40" y="5503" font-size="18" font-weight="600" class="hd2">8. Phase map — what unlocks what</text>
+<text x="40" y="5527" font-size="13" class="subtxt">A.5 must pass before C — no attack code on an unfenced network. B must pass before C — no SIEM, nothing to detect</text>
+<text x="40" y="5544" font-size="13" class="subtxt">with. C.6/C.7 are locked, deliberately-reduced scope. G is deferred, attempted only once F and E are stable.</text>
+<g transform="translate(60.0,5577)">
 <defs><marker id="a8" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
 <g class="c-red"><rect x="20" y="60" width="82" height="56" rx="8" stroke-width="0.5"/><text class="th" x="61" y="80" text-anchor="middle" dominant-baseline="central">A</text><text class="ts" x="61" y="98" text-anchor="middle" dominant-baseline="central">network</text></g>
 <line x1="102" y1="88" x2="112" y2="88" class="arr" marker-end="url(#a8)"/>
@@ -380,7 +394,5 @@
 <text class="ts" x="60" y="396">D benefits from C.6's richer alert stream — sequenced after it, not before</text>
 <text class="ts" x="60" y="416">G is deferred — attempted only once F and E are stable, on its own dedicated VM</text>
 </g>
+</g>
 </svg>
-
-</body>
-</html>
