@@ -1,6 +1,6 @@
 # Build Log Index
 
-This file is an index, not the log itself. The actual dated, narrative entries live under `logs/`, split by phase and, where a phase has more than one step, by step. Read the phase folders in number order for the build in blueprint order.
+This file is an index, not the log itself. The actual dated, narrative entries live under `Build Logs/`, split by phase and, where a phase has more than one step, by step. Read the phase folders in number order for the build in blueprint order.
 
 ## Why this changed (2026-09-06)
 
@@ -31,7 +31,7 @@ Phases are whole numbers, 1 through 12, and never get renumbered or reused. This
 
 ## Repo layout
 
-`logs/Phase NN Name/Step N Name/N.N Name.md`. Phase folders are zero padded (01 through 12) so they sort correctly on disk. Files inside a phase folder never repeat the phase name in their own filename. Numbering within a step starts at `.1`, never `.0`.
+`Build Logs/Phase NN Name/Step N Name/N.N Name.md`. Phase folders are zero padded (01 through 12) so they sort correctly on disk. Files inside a phase folder never repeat the phase name in their own filename. Numbering within a step starts at `.1`, never `.0`.
 
 A phase that is complete with a single entry gets one flat file directly in the phase folder, no Step subfolder (Phase 2 is the only one that currently qualifies). A phase still in progress always uses Step subfolders, even while it only has one step so far, so nothing ever needs renaming later as more steps are added (Phase 6 and Phase 10 both currently have only one real step each, but keep the Step folder for this reason).
 
@@ -41,18 +41,18 @@ Files split at natural content boundaries, the end of a coherent unit of work, s
 
 | # | Folder | Covers | Status |
 |---|---|---|---|
-| 01 | [`logs/Phase 01 Network Rebuild/`](./logs/Phase%2001%20Network%20Rebuild/) | Host and management access, Cisco switch identification and factory reset, VLAN 10/20/30 creation, pfSense VM and its three VLAN interfaces | Complete |
-| 02 | [`logs/Phase 02 Isolation Rule/`](./logs/Phase%2002%20Isolation%20Rule/) | RANGE30 default-deny firewall rule, isolation verified live | Complete |
-| 03 | [`logs/Phase 03 Wazuh Substrate/`](./logs/Phase%2003%20Wazuh%20Substrate/) | Ubuntu Server host build, INFRA20 outbound rules, Docker and Git setup, Wazuh 4.14.6 Compose deploy, first Wazuh agent enrolled on Win11-LTSC-Victim | Complete |
-| 04 | [`logs/Phase 04 Detection Engineering/`](./logs/Phase%2004%20Detection%20Engineering/) | Atomic Red Team staging, all six custom detection rules (100002 through 100007) written and verified, the if_group to if_sid chaining fix, SSH key-only hardening on wazuh-host, the unresolved FileDeleteDetected (Event 26) investigation | Complete, one known open gap (Event 26) |
-| 05 | [`logs/Phase 05 Network Visibility/`](./logs/Phase%2005%20Network%20Visibility/) | Switch SPAN session, NIC4 bridged into wazuh-host, Suricata install and Wazuh integration, the JSON decoder field-limit blocker, the discovery that the physical SPAN was blind to east-west traffic, the hypervisor tc mirroring fix and its live verification | Functionally complete, tc mirror persistence across reboot still open |
-| 06 | [`logs/Phase 06 Attack Surface/`](./logs/Phase%2006%20Attack%20Surface/) | Kali moved to RANGE30 and isolation confirmed live | In progress: Kali isolation done; pfSense log forwarding and the WireGuard VPN not started |
-| 07 | `logs/Phase 07 AD Expansion/` | AD/DC build (`dc01`), directory structure and RBAC, deliberate misconfigurations, GPO deployment and shares, Linux victim and web app, attacker tooling on Kali, the full kill chain, LAPS fix and retest, writeup | Not started |
-| 08 | `logs/Phase 08 Hybrid Identity/` | Entra Connect sync, Exchange Online and phishing simulation, Conditional Access and cloud identity enumeration | Not started |
-| 09 | `logs/Phase 09 AI Triage Layer/` | Governed Wazuh triage agent (`wazuh-triage-01`) | Not started |
-| 10 | [`logs/Phase 10 Local AI and Routing/`](./logs/Phase%2010%20Local%20AI%20and%20Routing/) | `pve-ai` host setup and vfio-pci GPU passthrough binding, `ai-vm` build with the RTX 3070 passed through and verified via nvidia-smi | Step 1 (GPU passthrough) complete; Step 2 (Ollama, Open WebUI, n8n routing) not started |
-| 11 | `logs/Phase 11 SOAR/` | Shuffle deployment, Wazuh webhook integration, first enrichment/notify playbook | Not started |
-| 12 | `logs/Phase 12 Case Management/` | TheHive and Cortex | Deferred |
+| 01 | [`Build Logs/Phase 01 Network Rebuild/`](./Build%20Logs/Phase%2001%20Network%20Rebuild/) | Host and management access, Cisco switch identification and factory reset, VLAN 10/20/30 creation, pfSense VM and its three VLAN interfaces | Complete |
+| 02 | [`Build Logs/Phase 02 Isolation Rule/`](./Build%20Logs/Phase%2002%20Isolation%20Rule/) | RANGE30 default-deny firewall rule, isolation verified live | Complete |
+| 03 | [`Build Logs/Phase 03 Wazuh Substrate/`](./Build%20Logs/Phase%2003%20Wazuh%20Substrate/) | Ubuntu Server host build, INFRA20 outbound rules, Docker and Git setup, Wazuh 4.14.6 Compose deploy, first Wazuh agent enrolled on Win11-LTSC-Victim | Complete |
+| 04 | [`Build Logs/Phase 04 Detection Engineering/`](./Build%20Logs/Phase%2004%20Detection%20Engineering/) | Atomic Red Team staging, all six custom detection rules (100002 through 100007) written and verified, the if_group to if_sid chaining fix, SSH key-only hardening on wazuh-host, the unresolved FileDeleteDetected (Event 26) investigation | Complete, one known open gap (Event 26) |
+| 05 | [`Build Logs/Phase 05 Network Visibility/`](./Build%20Logs/Phase%2005%20Network%20Visibility/) | Switch SPAN session, NIC4 bridged into wazuh-host, Suricata install and Wazuh integration, the JSON decoder field-limit blocker, the discovery that the physical SPAN was blind to east-west traffic, the hypervisor tc mirroring fix and its live verification | Functionally complete, tc mirror persistence across reboot still open |
+| 06 | [`Build Logs/Phase 06 Attack Surface/`](./Build%20Logs/Phase%2006%20Attack%20Surface/) | Kali moved to RANGE30 and isolation confirmed live | In progress: Kali isolation done; pfSense log forwarding and the WireGuard VPN not started |
+| 07 | `Build Logs/Phase 07 AD Expansion/` | AD/DC build (`dc01`), directory structure and RBAC, deliberate misconfigurations, GPO deployment and shares, Linux victim and web app, attacker tooling on Kali, the full kill chain, LAPS fix and retest, writeup | Not started |
+| 08 | `Build Logs/Phase 08 Hybrid Identity/` | Entra Connect sync, Exchange Online and phishing simulation, Conditional Access and cloud identity enumeration | Not started |
+| 09 | `Build Logs/Phase 09 AI Triage Layer/` | Governed Wazuh triage agent (`wazuh-triage-01`) | Not started |
+| 10 | [`Build Logs/Phase 10 Local AI and Routing/`](./Build%20Logs/Phase%2010%20Local%20AI%20and%20Routing/) | `pve-ai` host setup and vfio-pci GPU passthrough binding, `ai-vm` build with the RTX 3070 passed through and verified via nvidia-smi | Step 1 (GPU passthrough) complete; Step 2 (Ollama, Open WebUI, n8n routing) not started |
+| 11 | `Build Logs/Phase 11 SOAR/` | Shuffle deployment, Wazuh webhook integration, first enrichment/notify playbook | Not started |
+| 12 | `Build Logs/Phase 12 Case Management/` | TheHive and Cortex | Deferred |
 
 Empty phase folders (07, 08, 09, 11, 12) and empty step folders inside started phases (Phase 6 Steps 2 to 3, Phase 10 Step 2) are placeholders in the folder structure only, no files exist in them yet. They get their first file the day that work actually starts.
 

@@ -1,7 +1,7 @@
 # LAB-BLUEPRINT.md
 ### Home SOC Lab, what I'm building, and in what order
 
-**Purpose:** My shared map with Claude. What gets built, in what sequence, and how I know each phase actually worked. I run every command myself; Claude guides one step at a time and reads back the output. `build_log.md` is a short index into `logs/`, which carries the detailed, dated narrative of every step I've actually taken, the `.docx` workbooks that used to accompany this file were retired (2026-08-03) in favor of the `.md` files being the sole source of truth.
+**Purpose:** My shared map with Claude. What gets built, in what sequence, and how I know each phase actually worked. I run every command myself; Claude guides one step at a time and reads back the output. `build_log.md` is a short index into `Build Logs/`, which carries the detailed, dated narrative of every step I've actually taken, the `.docx` workbooks that used to accompany this file were retired (2026-08-03) in favor of the `.md` files being the sole source of truth.
 
 **Working principle:** Build incrementally. One change, one test, then the next change. Don't stack multiple untested changes (network config in particular, this environment has a documented history of lockouts from big-bang changes).
 
@@ -49,7 +49,7 @@
 ## Build Phases
 
 ### Phase 1 — Network Rebuild ✅ COMPLETE (2026-07-25)
-VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and acceptance-checked. Snapshot `pfsense-clean-install` taken. See `build_log.md` / `logs/Phase 01 Network Rebuild/`.
+VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and acceptance-checked. Snapshot `pfsense-clean-install` taken. See `build_log.md` / `Build Logs/Phase 01 Network Rebuild/`.
 
 ### Phase 2 — Isolation Rule ✅ COMPLETE
 1. Write (do not yet apply) a pfSense rule: Range → deny all, except one explicit allow to Infra's Wazuh ingest port.
@@ -86,7 +86,7 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 5. ✅ Committed rules/config-as-code.
 6. ✅ **Acceptance check:** every rule, of my own authorship, confirmed firing on a fresh atomic-test re-run, verified via direct `archives.json` inspection (the trustworthy method in this environment, `wazuh-logtest` fed raw JSON does not reliably reproduce the real Sysmon match path).
 
-**Complete (2026-08-11):** SSH key-only hardening on `wazuh-host`, personal key pair generated and installed, `PasswordAuthentication no` set and verified (password auth rejected, key auth succeeds), Claude Code's existing non-interactive key confirmed unaffected. See `logs/Phase 04 Detection Engineering/` for full session detail.
+**Complete (2026-08-11):** SSH key-only hardening on `wazuh-host`, personal key pair generated and installed, `PasswordAuthentication no` set and verified (password auth rejected, key auth succeeds), Claude Code's existing non-interactive key confirmed unaffected. See `Build Logs/Phase 04 Detection Engineering/` for full session detail.
 
 **Known gap, not yet resolved:** Sysmon's current config on Win11-LTSC-Victim does not capture FileDelete-family events (Event ID 23/26). Attempted enabling Event 26 on 2026-08-18, config validated and reloaded clean, but the event never fired in the live driver; root cause not isolated. Next hypothesis is Defender/PPL interaction, not an XML/config-syntax issue. File-deletion-based detections (T1070.004 and similar) remain blocked until this is deliberately revisited.
 
@@ -132,7 +132,7 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 
 **Explicitly excludes MITRE Caldera.** Caldera was evaluated as a way to autonomously orchestrate the post-compromise portion of this chain. Decided against: real setup cost (~4–6 hrs) for less time savings than expected, since most of this phase's hours are in understanding techniques and writing detections, not command execution, and it would work against the chosen interview narrative of executing this myself, end to end.
 
-**Steps (matching `logs/Phase 07 AD Expansion/` step folders):**
+**Steps (matching `Build Logs/Phase 07 AD Expansion/` step folders):**
 
 1. **Forest and Domain Build:**
    - Stand up `dc01`, Windows Server 2022, Core install, on RANGE30, sized modestly (2 vCPU / 4–8GB). **VM creation and Windows install are Claude Code-executed**, genuinely new territory, delegated as a deliberate time-saving trade-off given the overall scope size, not because it repeats known work.
@@ -307,7 +307,7 @@ Cluster `pve01` + `pve-ai` for a single Proxmox pane. Overhead negligible; the r
 The `.docx` workbooks that used to accompany this build have been retired (2026-08-03), they duplicated what's already in the `.md` files below and went stale independently. These four files are now the entire documentation set:
 
 - **`LAB-BLUEPRINT.md`** (this file), what I'm building and in what order, including the locked Phase 7 (AD/kill-chain expansion) and Phase 8 (IAM/Entra ID), plus Phase 11 SOAR and the deferred Phase 12
-- **`build_log.md`**, a short index into `logs/`, which carries the running, append-only record organized by phase, one numbered folder per phase, split into Step subfolders where a phase has more than one step or is still in progress; a complete phase with a single entry gets one flat file directly in the phase folder instead
+- **`build_log.md`**, a short index into `Build Logs/`, which carries the running, append-only record organized by phase, one numbered folder per phase, split into Step subfolders where a phase has more than one step or is still in progress; a complete phase with a single entry gets one flat file directly in the phase folder instead
 - **`agent-registry.md`**, every AI agent's scope, owner, lifecycle (`wazuh-triage-01`, `triage-router-01`)
 - **`README.md`**, repo-facing overview, phase status table, diagram link
 
