@@ -51,7 +51,7 @@ so the access model is settled before any code runs, not bolted on after.
   need to be distinguishable from my own manual choices.
 - **Status:** Not built yet. The underlying `pve-ai`/`ai-vm` GPU
   infrastructure is already built and verified (see `build_log.md` and
-  `logs/Phase 10 Local AI and Routing/`); what remains is the Ollama/Open
+  `Build Logs/Phase 10 Local AI and Routing/`); what remains is the Ollama/Open
   WebUI stack itself, then this router. **Execution model note:** the
   now-merged AI node build used a model where Claude Code executed
   commands directly over SSH after my confirmation, rather than my

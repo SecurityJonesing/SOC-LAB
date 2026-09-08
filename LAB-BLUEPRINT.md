@@ -5,7 +5,7 @@
 
 **Working principle:** Build incrementally. One change, one test, then the next change. Don't stack multiple untested changes (network config in particular, this environment has a documented history of lockouts from big-bang changes).
 
-**Scope status (2026-08-06):** This document reflects the full, locked scope of the build, start to finish, Phases 1 through 12, including Phase 7 (AD/kill-chain expansion, now including a second workstation and a fully realistic AD environment) and Phase 8 (IAM/Entra ID). Everything in it is committed, planned work, assembled across an extended planning conversation. New ideas raised mid-build get logged as next-steps in the relevant `investigations/` writeup or as a note in `PROJECT-INSTRUCTIONS.md`, they don't get folded into active scope without a deliberate decision to revisit and re-lock. See "Explicitly out of scope" near the end for everything already evaluated and deliberately excluded.
+**Scope status (2026-08-06):** This document reflects the full, locked scope of the build, start to finish, Phases 1 through 12, including Phase 7 (AD/kill-chain expansion, now including a second workstation and a fully realistic AD environment) and Phase 8 (IAM/Entra ID). Everything in it is committed, planned work, assembled across an extended planning conversation. New ideas raised mid-build get logged as next-steps in the relevant `Write-Up ....md` file (embedded in that phase's step folder under `Build Logs/`) or as a note in `PROJECT-INSTRUCTIONS.md`, they don't get folded into active scope without a deliberate decision to revisit and re-lock. See "Explicitly out of scope" near the end for everything already evaluated and deliberately excluded.
 
 ---
 
@@ -128,7 +128,7 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 
 **Why:** the lab as built through Phase 5 proves single-host detection engineering against one isolated Windows victim. It can't demonstrate lateral movement to a genuinely separate host, a real initial-access vector, AD-specific credential and certificate attacks, or Discovery-stage tooling (BloodHound). This phase closes those gaps with a realistic, full-depth Active Directory environment and one coherent, end-to-end kill chain.
 
-**Scope: a real two-host lateral movement chain, deliberately stopping short of full interactive compromise of `dc01` itself.** The chain runs foothold → privilege escalation → credential/certificate access → discovery → lateral movement (to a genuinely separate, previously-uncompromised second workstation) → persistence → exfiltration/impact. Where domain-wide credential material is needed (e.g. via a DCSync misconfiguration), it's obtained through that AD-level abuse rather than by gaining an interactive shell on `dc01`, a real, valid attack path in its own right, but one that stops short of treating `dc01` as a fully compromised host with its own persistence/impact stage. That distinction is a deliberate scope boundary, documented as a next-step in the eventual `investigations/` writeup, not a shortfall.
+**Scope: a real two-host lateral movement chain, deliberately stopping short of full interactive compromise of `dc01` itself.** The chain runs foothold → privilege escalation → credential/certificate access → discovery → lateral movement (to a genuinely separate, previously-uncompromised second workstation) → persistence → exfiltration/impact. Where domain-wide credential material is needed (e.g. via a DCSync misconfiguration), it's obtained through that AD-level abuse rather than by gaining an interactive shell on `dc01`, a real, valid attack path in its own right, but one that stops short of treating `dc01` as a fully compromised host with its own persistence/impact stage. That distinction is a deliberate scope boundary, documented as a next-step in the eventual Phase 7 writeup, not a shortfall.
 
 **Explicitly excludes MITRE Caldera.** Caldera was evaluated as a way to autonomously orchestrate the post-compromise portion of this chain. Decided against: real setup cost (~4–6 hrs) for less time savings than expected, since most of this phase's hours are in understanding techniques and writing detections, not command execution, and it would work against the chosen interview narrative of executing this myself, end to end.
 
@@ -184,8 +184,8 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
    - Write a Wazuh (and where applicable Suricata) detection rule for each stage before moving to the next, I write the final rule, Claude drafts a reference.
 9. **LAPS Fix and Pivot Retest:** deploy LAPS as the fix, re-test the lateral-movement pivot, confirm it's closed, the explicit before/after comparison.
 10. **Writeup and Acceptance:**
-    - Write it up as one `investigations/` case, a single continuous narrative from Initial Access through Impact, including an explicit "next steps" section noting that full interactive compromise of `dc01` itself was intentionally out of scope.
-    - **Acceptance check:** the full chain runs start to finish against the live environment in one sitting, with a Wazuh and/or Suricata detection confirmed at every named stage, BloodHound's full analysis workflow demonstrated (not just the collector run), and the `investigations/` writeup accurately reflecting what actually happened.
+    - Write it up as one continuous case narrative across the phase's `Build Logs/` step folders, from Initial Access through Impact, including an explicit "next steps" section noting that full interactive compromise of `dc01` itself was intentionally out of scope.
+    - **Acceptance check:** the full chain runs start to finish against the live environment in one sitting, with a Wazuh and/or Suricata detection confirmed at every named stage, BloodHound's full analysis workflow demonstrated (not just the collector run), and the writeup accurately reflecting what actually happened.
 
 ---
 
@@ -259,7 +259,7 @@ The underlying `pve-ai`/`ai-vm` infrastructure (GPU passthrough, Ubuntu VM, NVID
 - **Cortex** = enrichment/analysis engine, overlapping with Shuffle's light enrichment but systematic.
 - **Why deferred:** TheHive requires **Cassandra** (case DB) + **Elasticsearch** (search/index) as backends, all version-matched. Coexisting with Wazuh's own indexer is the specific friction point. Realistic cost: ~4–8 sessions, mostly version-matching and startup-order issues.
 - **Sequence:** attempt only after Phases 10 and 11 are solid. Wants its own dedicated VM.
-- `investigations/` writeups in Git serve as case documentation in the meantime.
+- The `Write-Up ....md` files embedded in `Build Logs/` serve as case documentation in the meantime.
 
 ---
 
@@ -292,7 +292,7 @@ At ~15–17 hrs/week (baseline pace inferred from `build_log.md`, plus a 5 hr/we
 - **Microsoft Entra ID P2**, Identity Protection's risk-based sign-in scoring, Privileged Identity Management, Access Reviews. More architect-tier than day-to-day analyst work; the Free tier plus a time-boxed P1 trial covers the target skill set.
 - **On-prem Exchange Server**, Exchange Online only. On-prem Exchange's setup/troubleshooting risk outweighed its actual relevance to the target roles.
 - **Standalone GoPhish + mail relay**, Exchange Online's own Defender for Office 365 Attack Simulation Training is used instead, specifically to avoid ambiguity around automated abuse-detection systems flagging a homebuilt phishing campaign.
-- **Full interactive host-level compromise of `dc01`**, the DCSync misconfiguration provides a genuine, real-world path to domain-wide credential material without needing a shell on the DC itself. Documented as a deliberate scope boundary and a future `investigations/` next-step, not a shortfall.
+- **Full interactive host-level compromise of `dc01`**, the DCSync misconfiguration provides a genuine, real-world path to domain-wide credential material without needing a shell on the DC itself. Documented as a deliberate scope boundary and a future writeup next-step, not a shortfall.
 
 ---
 
