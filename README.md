@@ -22,7 +22,7 @@ and Security.
 
 ## Architecture
 
-![SOC lab network architecture](./architecture-diagram.svg)
+![SOC lab network architecture](./Diagrams/architecture-diagram.svg)
 
 **Hybrid identity layer:** `dc01` (on-prem AD, domain `soclab.internal`)
 syncs to a Microsoft Entra ID tenant via Entra Connect, extending the lab's
