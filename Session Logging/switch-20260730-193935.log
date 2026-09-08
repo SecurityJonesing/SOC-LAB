@@ -1,23 +1,0 @@
-=~=~=~=~=~=~=~=~=~=~=~= PuTTY log 2026.07.30 19:39:35 =~=~=~=~=~=~=~=~=~=~=~=
-login as: root
-root@192.168.0.201's password: 
-Linux Pve01 7.0.14-5-pve #1 SMP PREEMPT_DYNAMIC PMX 7.0.14-5 (2026-07-14T12:32Z) x86_64
-
-The programs included with the Debian GNU/Linux system are free software;
-the exact distribution terms for each program are described in the
-individual files in /usr/share/doc/*/copyright.
-
-Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
-permitted by applicable law.
-Last login: Tue Jul 21 19:20:03 2026 from 192.168.0.41
-[?2004hroot@Pve01:~# [7mqm snapshot 102 pre-isolation-rule[27m[C[C[C[C[C[C[C[C[C[C[C[C[C[Cqm snapshot 102 pre-isolation-rule
-[?2004lsnapshotting 'drive-scsi0' (local-lvm:vm-102-disk-0)
-  Logical volume "snap_vm-102-disk-0_pre-isolation-rule" created.
-[?2004hroot@Pve01:~# ^C[?2004l[?2004h[?2004l
-[?2004hroot@Pve01:~# [7mroot@Pve01:~# qm snapshot 102 pre-isolation-rule[27m
-[7msnapshotting 'drive-scsi0' (local-lvm:vm-102-disk-0)[27m
-[7m  Logical volume "snap_vm-102-disk-0_pre-isolation-rule" created.[27m
-[A[A[A[C[C[C[C[C[C[C[C[C[C[C[C[C[Croot@Pve01:~# qm snapshot 102 pre-isolation-rule
-snapshotting 'drive-scsi0' (local-lvm:vm-102-disk-0)
-  Logical volume "snap_vm-102-disk-0_pre-isolation-rule" created.
-[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[A[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[C[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K[K
