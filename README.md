@@ -109,4 +109,4 @@ for planned scope and status.
 - [`build_log.md`](./build_log.md) — the running record, organized by phase, of every change and its actual output — now also incorporating the merged AI node build history
 - [`agent-registry.md`](./agent-registry.md) — scope/owner/lifecycle for every AI agent and privileged non-human identity in the lab
 - [`PROJECT-INSTRUCTIONS.md`](./PROJECT-INSTRUCTIONS.md) — environment reference used to drive Claude sessions
-- [`Diagrams/SOC-Lab-Diagrams.html`](./Diagrams/SOC-Lab-Diagrams.html) — the eight reference diagrams
+- <a href="https://securityjonesing.github.io/SOC-LAB/Diagrams/SOC-Lab-Diagrams.html" target="_blank" rel="noopener">`Diagrams/SOC-Lab-Diagrams.html`</a> — the eight reference diagrams, opens in a new tab
