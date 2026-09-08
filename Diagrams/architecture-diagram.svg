@@ -1,88 +1,134 @@
-<svg width="1000" height="700" viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif" xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTplZmYwN2U4MC05MGZhLTQzOWMtYTBjMC1kOGZmNjY5NmM0MTUAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaLcXOUuD1pRXI6fqKdfFxjoAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDphZDJiNjY2Ni00ZGJiLTQyNDItODE0MC1iNWJlMTU0M2JkNWNscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNo3QOnzGUMXq2VXzj3Eq1peAAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggK1XLVdhg0Uohh5yar/ya0/thAW5d4yVgwZYKUdaRsRykZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaJ3+QUzM4u/tXfNJfl8wlsgAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRNAAAAAAAAAAAAAAAAAGRoYXNoWCDTyYx1c4jgEIjfpMb1pBDEAxFv9VgDiyr14z3VsxH1jmRuYW1lbmp1bWJmIG1hbmlmZXN0amV4Y2x1c2lvbnOBomVzdGFydBjDZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOmVmZjA3ZTgwLTkwZmEtNDM5Yy1hMGMwLWQ4ZmY2Njk2YzQxNS9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjhlMDc3NzVhLWU5ZGYtNDExNC1iMzNhLTBjNjlkN2VkMWVjMnJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCArVctV2GDRSiGHnJqv/JrT+2EBbl3jJWDBlgpR1pGxHKJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggZ2Kci7LRyy/uIheS6NFqDeCW6jhXMcmm93wAwXGRC9CiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFgg5GS0gL2fW+qmyoIFOsXndfB20Kxbla+e33vOxC1wj3F0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQLQHvN2tkJZzoZCqClRugWgm+a8jzgH+O7wh/lBOPgcUgoyNlHsr/iRVv+cNcCB7hgN9mqArWT6WtBWDX4E7Qi0=</c2pa:manifest></metadata>
+<svg width="1000" height="700" viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
 <title>SOC lab network architecture</title>
 <desc>Home router down through a dumb switch (with a branch to the management PC), pfSense VM, and the Cisco Catalyst trunk switch, which fans out into four VLANs: MGMT10, INFRA20, RANGE30, and a passive SPAN monitor.</desc>
 
-<rect x="0" y="0" width="1000" height="700" fill="#ffffff"/>
+<style>
+  :root { color-scheme: light dark; }
+
+  .bg { fill:#ffffff; }
+  .arrow-line { stroke:#5F5E5A; }
+  .arrow-line-muted { stroke:#888780; }
+
+  .box-neutral { fill:#F1EFE8; stroke:#5F5E5A; }
+  .box-neutral-muted { fill:#F1EFE8; stroke:#888780; }
+  .box-blue { fill:#E6F1FB; stroke:#185FA5; }
+  .box-red { fill:#FAECE7; stroke:#993C1D; }
+  .box-teal { fill:#E1F5EE; stroke:#0F6E56; }
+
+  .t-title { fill:#2C2C2A; }
+  .t-sub { fill:#5F5E5A; }
+  .t-blue-title { fill:#042C53; }
+  .t-blue-sub { fill:#185FA5; }
+  .t-blue-sub2 { fill:#0C447C; }
+  .t-red-title { fill:#4A1B0C; }
+  .t-red-sub { fill:#712B13; }
+  .t-teal-title { fill:#04342C; }
+  .t-teal-sub { fill:#085041; }
+
+  @media (prefers-color-scheme: dark) {
+    .bg { fill:#1B1B19; }
+    .arrow-line { stroke:#B4B2A9; }
+    .arrow-line-muted { stroke:#8A887F; }
+
+    .box-neutral { fill:#3A3934; stroke:#B4B2A9; }
+    .box-neutral-muted { fill:#3A3934; stroke:#8A887F; }
+    .box-blue { fill:#0C2E4F; stroke:#4A9FE0; }
+    .box-red { fill:#3D160A; stroke:#C97A54; }
+    .box-teal { fill:#06342A; stroke:#3FA98A; }
+
+    .t-title { fill:#F1EFE8; }
+    .t-sub { fill:#D3D1C7; }
+    .t-blue-title { fill:#E6F1FB; }
+    .t-blue-sub { fill:#85B7EB; }
+    .t-blue-sub2 { fill:#9FCBF5; }
+    .t-red-title { fill:#FAECE7; }
+    .t-red-sub { fill:#E0916A; }
+    .t-teal-title { fill:#E1F5EE; }
+    .t-teal-sub { fill:#5DCAA5; }
+  }
+</style>
+
+<rect x="0" y="0" width="1000" height="700" class="bg"/>
 
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-<path d="M2 1L8 5L2 9" fill="none" stroke="#5F5E5A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M2 1L8 5L2 9" fill="none" class="arrow-line" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
 </marker>
 </defs>
 
-<line x1="500" y1="90" x2="500" y2="140" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="500" y1="190" x2="500" y2="230" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="500" y1="290" x2="500" y2="330" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="590" y1="165" x2="700" y2="165" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="500" y1="390" x2="500" y2="410" stroke="#5F5E5A" stroke-width="1.5"/>
-<line x1="155" y1="410" x2="845" y2="410" stroke="#5F5E5A" stroke-width="1.5"/>
-<line x1="155" y1="410" x2="155" y2="430" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="385" y1="410" x2="385" y2="430" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="615" y1="410" x2="615" y2="430" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
-<line x1="845" y1="410" x2="845" y2="430" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="500" y1="90" x2="500" y2="140" class="arrow-line" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="500" y1="190" x2="500" y2="230" class="arrow-line" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="500" y1="290" x2="500" y2="330" class="arrow-line" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="590" y1="165" x2="700" y2="165" class="arrow-line-muted" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="500" y1="390" x2="500" y2="410" class="arrow-line" stroke-width="1.5"/>
+<line x1="155" y1="410" x2="845" y2="410" class="arrow-line" stroke-width="1.5"/>
+<line x1="155" y1="410" x2="155" y2="430" class="arrow-line" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="385" y1="410" x2="385" y2="430" class="arrow-line" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="615" y1="410" x2="615" y2="430" class="arrow-line" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="845" y1="410" x2="845" y2="430" class="arrow-line" stroke-width="1.5" marker-end="url(#arrow)"/>
 
 <g>
-<rect x="390" y="40" width="220" height="50" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.75"/>
-<text x="500" y="59" text-anchor="middle" font-size="14" font-weight="700" fill="#2C2C2A">Home router</text>
-<text x="500" y="77" text-anchor="middle" font-size="12" fill="#5F5E5A">192.168.0.1</text>
+<rect x="390" y="40" width="220" height="50" rx="8" class="box-neutral" stroke-width="0.75"/>
+<text x="500" y="59" text-anchor="middle" font-size="14" font-weight="700" class="t-title">Home router</text>
+<text x="500" y="77" text-anchor="middle" font-size="12" class="t-sub">192.168.0.1</text>
 </g>
 
 <g>
-<rect x="410" y="140" width="180" height="50" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.75"/>
-<text x="500" y="170" text-anchor="middle" font-size="14" font-weight="700" fill="#2C2C2A">Dumb switch</text>
+<rect x="410" y="140" width="180" height="50" rx="8" class="box-neutral" stroke-width="0.75"/>
+<text x="500" y="170" text-anchor="middle" font-size="14" font-weight="700" class="t-title">Dumb switch</text>
 </g>
 
 <g>
-<rect x="700" y="140" width="220" height="50" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
-<text x="810" y="159" text-anchor="middle" font-size="13" font-weight="700" fill="#2C2C2A">Management PC</text>
-<text x="810" y="176" text-anchor="middle" font-size="11" fill="#5F5E5A">dedicated USB-Ethernet</text>
+<rect x="700" y="140" width="220" height="50" rx="8" class="box-neutral-muted" stroke-width="0.75"/>
+<text x="810" y="159" text-anchor="middle" font-size="13" font-weight="700" class="t-title">Management PC</text>
+<text x="810" y="176" text-anchor="middle" font-size="11" class="t-sub">dedicated USB-Ethernet</text>
 </g>
 
 <g>
-<rect x="360" y="230" width="280" height="60" rx="8" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.75"/>
-<text x="500" y="255" text-anchor="middle" font-size="14" font-weight="700" fill="#042C53">pfSense VM (pve01)</text>
-<text x="500" y="274" text-anchor="middle" font-size="12" fill="#185FA5">+ WireGuard remote-access VPN</text>
+<rect x="360" y="230" width="280" height="60" rx="8" class="box-blue" stroke-width="0.75"/>
+<text x="500" y="255" text-anchor="middle" font-size="14" font-weight="700" class="t-blue-title">pfSense VM (pve01)</text>
+<text x="500" y="274" text-anchor="middle" font-size="12" class="t-blue-sub">+ WireGuard remote-access VPN</text>
 </g>
 
 <g>
-<rect x="360" y="330" width="280" height="60" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.75"/>
-<text x="500" y="355" text-anchor="middle" font-size="14" font-weight="700" fill="#2C2C2A">Cisco Catalyst switch</text>
-<text x="500" y="374" text-anchor="middle" font-size="12" fill="#5F5E5A">802.1Q trunk</text>
+<rect x="360" y="330" width="280" height="60" rx="8" class="box-neutral" stroke-width="0.75"/>
+<text x="500" y="355" text-anchor="middle" font-size="14" font-weight="700" class="t-title">Cisco Catalyst switch</text>
+<text x="500" y="374" text-anchor="middle" font-size="12" class="t-sub">802.1Q trunk</text>
 </g>
 
 <g>
-<rect x="50" y="430" width="210" height="220" rx="10" fill="#F1EFE8" stroke="#888780" stroke-width="0.75"/>
-<text x="155" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="#2C2C2A">MGMT10</text>
-<text x="155" y="485" text-anchor="middle" font-size="12" fill="#5F5E5A">(mgmt)</text>
+<rect x="50" y="430" width="210" height="220" rx="10" class="box-neutral-muted" stroke-width="0.75"/>
+<text x="155" y="460" text-anchor="middle" font-size="14" font-weight="700" class="t-title">MGMT10</text>
+<text x="155" y="485" text-anchor="middle" font-size="12" class="t-sub">(mgmt)</text>
 </g>
 
 <g>
-<rect x="280" y="430" width="210" height="220" rx="10" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.75"/>
-<text x="385" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="#042C53">INFRA20</text>
-<text x="385" y="485" text-anchor="middle" font-size="12" fill="#0C447C">Docker / Wazuh</text>
-<text x="385" y="505" text-anchor="middle" font-size="12" fill="#0C447C">Suricata</text>
-<text x="385" y="525" text-anchor="middle" font-size="12" fill="#0C447C">Shuffle / n8n</text>
-<text x="385" y="545" text-anchor="middle" font-size="12" fill="#0C447C">entra-connect-01</text>
-<text x="385" y="565" text-anchor="middle" font-size="12" fill="#0C447C">+ pve-ai inference</text>
+<rect x="280" y="430" width="210" height="220" rx="10" class="box-blue" stroke-width="0.75"/>
+<text x="385" y="460" text-anchor="middle" font-size="14" font-weight="700" class="t-blue-title">INFRA20</text>
+<text x="385" y="485" text-anchor="middle" font-size="12" class="t-blue-sub2">Docker / Wazuh</text>
+<text x="385" y="505" text-anchor="middle" font-size="12" class="t-blue-sub2">Suricata</text>
+<text x="385" y="525" text-anchor="middle" font-size="12" class="t-blue-sub2">Shuffle / n8n</text>
+<text x="385" y="545" text-anchor="middle" font-size="12" class="t-blue-sub2">entra-connect-01</text>
+<text x="385" y="565" text-anchor="middle" font-size="12" class="t-blue-sub2">+ pve-ai inference</text>
 </g>
 
 <g>
-<rect x="510" y="430" width="210" height="220" rx="10" fill="#FAECE7" stroke="#993C1D" stroke-width="0.75"/>
-<text x="615" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="#4A1B0C">RANGE30</text>
-<text x="615" y="485" text-anchor="middle" font-size="12" fill="#712B13">Kali</text>
-<text x="615" y="505" text-anchor="middle" font-size="12" fill="#712B13">Win11-LTSC-victim</text>
-<text x="615" y="525" text-anchor="middle" font-size="12" fill="#712B13">win11-ws02</text>
-<text x="615" y="545" text-anchor="middle" font-size="12" fill="#712B13">dc01</text>
-<text x="615" y="565" text-anchor="middle" font-size="12" fill="#712B13">linux-victim</text>
-<text x="615" y="585" text-anchor="middle" font-size="12" fill="#712B13">+ phantom computer objects</text>
+<rect x="510" y="430" width="210" height="220" rx="10" class="box-red" stroke-width="0.75"/>
+<text x="615" y="460" text-anchor="middle" font-size="14" font-weight="700" class="t-red-title">RANGE30</text>
+<text x="615" y="485" text-anchor="middle" font-size="12" class="t-red-sub">Kali</text>
+<text x="615" y="505" text-anchor="middle" font-size="12" class="t-red-sub">Win11-LTSC-victim</text>
+<text x="615" y="525" text-anchor="middle" font-size="12" class="t-red-sub">win11-ws02</text>
+<text x="615" y="545" text-anchor="middle" font-size="12" class="t-red-sub">dc01</text>
+<text x="615" y="565" text-anchor="middle" font-size="12" class="t-red-sub">linux-victim</text>
+<text x="615" y="585" text-anchor="middle" font-size="12" class="t-red-sub">+ phantom computer objects</text>
 </g>
 
 <g>
-<rect x="740" y="430" width="210" height="220" rx="10" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.75"/>
-<text x="845" y="460" text-anchor="middle" font-size="14" font-weight="700" fill="#04342C">SPAN monitor</text>
-<text x="845" y="485" text-anchor="middle" font-size="12" fill="#085041">Mirrors Range traffic</text>
-<text x="845" y="505" text-anchor="middle" font-size="12" fill="#085041">-&gt; Suricata</text>
-<text x="845" y="525" text-anchor="middle" font-size="12" fill="#085041">passive / no IP</text>
+<rect x="740" y="430" width="210" height="220" rx="10" class="box-teal" stroke-width="0.75"/>
+<text x="845" y="460" text-anchor="middle" font-size="14" font-weight="700" class="t-teal-title">SPAN monitor</text>
+<text x="845" y="485" text-anchor="middle" font-size="12" class="t-teal-sub">Mirrors Range traffic</text>
+<text x="845" y="505" text-anchor="middle" font-size="12" class="t-teal-sub">-&gt; Suricata</text>
+<text x="845" y="525" text-anchor="middle" font-size="12" class="t-teal-sub">passive / no IP</text>
 </g>
 
 </svg>
