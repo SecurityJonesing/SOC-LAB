@@ -110,3 +110,4 @@ for planned scope and status.
 - [`agent-registry.md`](./agent-registry.md) — scope/owner/lifecycle for every AI agent and privileged non-human identity in the lab
 - [`PROJECT-INSTRUCTIONS.md`](./PROJECT-INSTRUCTIONS.md) — environment reference used to drive Claude sessions
 - <a href="https://securityjonesing.github.io/SOC-LAB/Diagrams/SOC-Lab-Diagrams.html" target="_blank" rel="noopener">`Diagrams/SOC-Lab-Diagrams.html`</a> — the eight reference diagrams, opens in a new tab
+- <a href="https://securityjonesing.github.io/SOC-LAB/Diagrams/architecture-diagram.svg" target="_blank" rel="noopener">`Diagrams/architecture-diagram.svg`</a> — the network architecture diagram shown above, opens in a new tab
