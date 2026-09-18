@@ -62,14 +62,14 @@ Split into three files under `Blueprint/` on 2026-09-07 to keep this index file 
 |---|---|---|
 | Phase 4 | 5–7 (complete) | — |
 | SSH key-only hardening, `wazuh-host` | 0.5–1 (complete) | — |
-| Phase 5 (SPAN, Suricata, east-west visibility gap, hypervisor `tc` mirroring) | complete, persistence step outstanding | — |
+| Phase 5 (SPAN, Suricata, east-west visibility gap, hypervisor `tc` mirroring, persistence via Proxmox hookscripts) | complete | — |
 | Phase 6 (infra hardening: Kali isolation complete, pfSense log forwarding, WireGuard VPN) | ~2–4 remaining | — |
 | Phase 7 (full AD build design + misconfigurations, expanded Kali tooling, full kill chain incl. Discovery/BloodHound workflow, LAPS before/after, stitching + writeup) | 36–48 | ~5.5–9 |
 | Phase 8 (Entra ID Free + Entra Connect + Exchange Online + P1 trial + AADInternals/ROADtools) | 11–19 | ~1.5–2.5 |
 | Phase 9 | 5.5–9 | — |
 | Phase 10 | 4.5–6.5 | — |
 | Phase 11 | 4.5–8.5 | — |
-| **Total remaining (Phase 6 through 11; Phases 1/2/3/4 complete; Phase 5 nearly complete)** | **~69–103 hrs** | **~7–11.5 hrs** |
+| **Total remaining (Phase 6 through 11; Phases 1/2/3/4/5 complete)** | **~69–103 hrs** | **~7–11.5 hrs** |
 
 **What's automated, final version (2026-08-06, revised):** `dc01`'s VM creation, base Windows Server install, and AD DS role install only, **not** `Install-ADDSForest` itself, which is where the real decisions live (forest/domain functional level, DNS strategy, DSRM password) and stays manual, along with Kerberos Policy configuration, the PDC Emulator time source, and post-build verification. `win11-ws02`'s full build (VM/Windows/Sysmon/Wazuh agent), domain-joining both workstations, AD account creation/OU placement/group membership assignment (not group creation), the AD port-list firewall rules on RANGE30, Entra Connect's VM creation and software install (not sync account scoping or the firewall rule), and Exchange Online mailbox creation (not Attack Simulation Training design) are all Claude Code-executed. Everything with real security or design judgment, the OU/tiered-model design, group creation, GPOs, all six deliberate misconfigurations, the WireGuard VPN configuration, the INFRA20→RANGE30 Entra Connect rule, Conditional Access/MFA testing, and AADInternals/ROADtools, stays fully manual. See "Execution model exceptions" in `PROJECT-INSTRUCTIONS.md` for the full reasoning.
 
