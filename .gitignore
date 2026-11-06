@@ -1,13 +1,19 @@
+# Local-only working files (kept on my PC, not pushed)
 Session Logging/
-GOTCHAS.md
 build_log.md
+GOTCHAS.md
+PROJECT-INSTRUCTIONS.md
 git-commands-reference.md
 git-commands-reference.docx
-PROJECT-INSTRUCTIONS.md
+
+# Reader-facing docs kept local
 SOC-Lab-Cheatsheet.md
 SOC-Lab-Cheatsheet.docx
 SOC-Lab-Lesson-Plans.md
 Lesson Plans/
 
-~$*
+# Word copies of the Phase 4 write-ups (the .md versions are tracked)
 /Build Logs/Phase 04 Detection Engineering/Write-ups .docx format/
+
+# Office lock files
+~$*
