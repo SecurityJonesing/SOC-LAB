@@ -19,7 +19,7 @@
 | Cisco Catalyst switch | WS-C2960X-48FPS-L, IOS 15.2(7)E9 | Factory reset complete and confirmed clean; carries VLAN trunk + SPAN monitor port |
 
 ### Existing VMs on `pve01`
-- **Kali** — attack box (runs real network attacks: nmap, Responder, NetExec, etc.). **Moved from flat `vmbr1` to RANGE30 on 2026-08-18, isolation confirmed live via three pings** (no internet, no home/MGMT reach, no ICMP to INFRA20), the same isolation model already proven for Win11-LTSC-Victim. This closed the first of three infra-hardening sub-steps in Phase 6.
+- **Kali** — attack box (runs real network attacks: nmap, Responder, NetExec, etc.). **Moved from flat `vmbr1` to RANGE30 on 2026-08-18, isolation confirmed live via three pings** (no internet, no home/MGMT reach, no ICMP to INFRA20), the same isolation model already proven for Win11-LTSC-Victim. This closed the first of three infra-hardening sub-steps in Phase 6. Kali also runs a Wazuh agent (agent ID 002, enrolled 2026-11-06, an unplanned addition logged under Phase 3 Step 3).
 - **Win11-LTSC-victim** — Windows victim. Moved to RANGE30 in Phase 3 (2026-08-04), isolation proven live, Sysmon + Wazuh agent reporting (agent ID `001`). Domain-joins to `soclab.internal` in Phase 7; serves as the first lateral-movement hop.
 - **`wazuh-host` / `ubuntu-soc-host`** — Docker/Wazuh substrate on INFRA20, built in Phase 3, complete. Suricata 8.0.6 added in Phase 5, integrated with Wazuh via `eve.json`.
 

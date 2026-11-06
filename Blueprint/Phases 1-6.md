@@ -70,7 +70,7 @@ VLANs, trunk, management access port, pfSense VM + VLAN interfaces all built and
 
 **Sub-steps:**
 
-1. ✅ **Move Kali to RANGE30, complete 2026-08-18.** Isolation confirmed live via three pings (no internet, no home/MGMT reach, no ICMP to INFRA20).
+1. ✅ **Move Kali to RANGE30, complete 2026-08-18.** Isolation confirmed live via three pings (no internet, no home/MGMT reach, no ICMP to INFRA20). Kali was later also enrolled as Wazuh agent 002 (2026-11-06, unplanned, logged under Phase 3 Step 3).
 2. **Forward pfSense logs** (firewall pass/block, DHCP, DNS) into Wazuh. **Not yet done.**
 3. **Configure a pfSense remote-access WireGuard VPN**, decided over OpenVPN for its simpler configuration surface (fewer places for a subtle rule mistake), better performance, and native integration in pfSense CE since 2.5. A second, credential-based Initial Access vector, distinct from and complementary to the web-app exploit path in Phase 7. I write the final firewall rules, Claude drafts a reference. **Not yet done.**
 
